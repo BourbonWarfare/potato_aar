@@ -1,0 +1,12 @@
+name = "Potato 0.0.0";
+picture = "potato_icon_ca.paa";
+actionName = "GitHub";
+action = "https://github.com/BourbonWarfare/POTATO";
+description = "Potato";
+logo = "potato_icon_ca.paa";
+logoOver = "potato_icon_ca.paa";
+tooltip = "Potato";
+tooltipOwned = "Potato";
+overview = "Potato: BW's admin tools";
+author = "BW";
+overviewPicture = "potato_icon_ca.paa";

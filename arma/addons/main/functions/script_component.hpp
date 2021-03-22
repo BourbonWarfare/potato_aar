@@ -1,0 +1,1 @@
+#include "\z\potato_aar\arma\addons\main\script_component.hpp"

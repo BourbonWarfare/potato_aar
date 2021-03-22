@@ -1,0 +1,15 @@
+release/*
+*.cache
+*.pbo
+texHeaders.bin
+*.swp
+*.swo
+*.biprivatekey
+*.dll
+Thumbs.db
+
+hemtt.exe
+releases/*
+keys/*
+.hemtt/local
+sqfvm.exe

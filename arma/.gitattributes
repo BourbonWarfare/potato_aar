@@ -1,0 +1,23 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.hpp text
+*.sqf text
+*.sqm text
+*.ext text
+*.fsm text
+
+# Denote all files that are truly binary and should not be modified.
+*.jpg binary
+*.ogg binary
+*.wav binary
+*.paa binary
+
+# Change GitHub language categorization
+addons/**/*.cpp linguist-language=SQF
+addons/**/*.hpp linguist-language=SQF
+
+# Do not count hemtt includes in language usage stats
+include/* linguist-vendored
