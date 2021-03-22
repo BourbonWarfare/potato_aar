@@ -10,6 +10,7 @@ Thumbs.db
 
 hemtt.exe
 releases/*
+build/*
 keys/*
 .hemtt/local
 sqfvm.exe
