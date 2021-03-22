@@ -1,11 +1,8 @@
-name = "potato"
-prefix = "potato"
+name = "potato_aar"
+prefix = "potato_aar"
 author = "Potato Mashers"
 files = [
-    "mod.cpp",
-    "README.md",
-    "LICENSE.md",
-    "potato_icon_ca.paa"
+    "mod.cpp"
 ]
 
 
@@ -23,7 +20,7 @@ postbuild = [
     "!version_unset"
 ]
 releasebuild = [
-    "@zip potato_v{{semver.major}}.{{semver.minor}}.{{semver.patch}}"
+    "@zip potato_aar_v{{semver.major}}.{{semver.minor}}.{{semver.patch}}"
 ]
 
 [header_exts]
