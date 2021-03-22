@@ -1,0 +1,3 @@
+file(GLOB SOURCES CONFIGURE_DEPENDS "*.c" "*.cpp")
+add_executable( ${PROJECT_NAME} ${SOURCES} ${GLOBAL_SOURCES})
+
