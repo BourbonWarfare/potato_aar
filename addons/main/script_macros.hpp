@@ -1,6 +1,5 @@
 //Add all ACE and CBA macros:
 #include "\z\ace\addons\main\script_macros.hpp"
-#include "script_macros_debug.hpp"
 
 #define ACE_PREFIX ace
 

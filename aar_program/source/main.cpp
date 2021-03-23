@@ -1,5 +1,8 @@
-#include "main.hpp"
+#include "dataServer.hpp"
 
 int main() {
-    std::cout << "Hello, world!";
+    dataServer server;
+    while (true) {}
+
+    return 0;
 }
