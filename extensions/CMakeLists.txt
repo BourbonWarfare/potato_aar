@@ -6,11 +6,14 @@ file (GLOB SOURCES "*.cpp")
 list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/aar_extension_tests.cpp")
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/asio/asio/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/asio/asio/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/spdlog/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/bw_common")
 
 add_executable(${PROJECT_TEST_NAME} "aar_extension_tests.cpp" ${GLOBAL_SOURCES})
-target_include_directories(${PROJECT_TEST_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/asio/asio/include")
-target_include_directories(${PROJECT_TEST_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include")
+target_include_directories(${PROJECT_TEST_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/asio/asio/include")
+target_include_directories(${PROJECT_TEST_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/spdlog/include")
+target_include_directories(${PROJECT_TEST_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/bw_common")
 
 target_link_libraries(${PROJECT_TEST_NAME} PUBLIC ${PROJECT_NAME})
 

@@ -1,8 +1,10 @@
 // Brandon (TCVM)
 // gets data from SQF and dumps it across network to external program
+// in msvc this should be built in "release" otherwise you get buffer overflow errors
 #include <cstdint>
 #include <memory>
 #include <exception>
+#include <string>
 #include "connection.hpp"
 #include "dataSender.hpp"
 
@@ -47,13 +49,14 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function) {
         case hash("startup"):
             try {
                 globals::dataProcessor = std::make_unique<dataSender>();
-            }
-            catch (const std::exception &e) {
+                strncpy_s(output, outputSize, "data sender started", _TRUNCATE);
+            } catch (const std::exception &e) {
                 strncpy_s(output, outputSize, e.what(), _TRUNCATE);
             };
             break;
         case hash("shutdown"):
             globals::dataProcessor.reset();
+            strncpy_s(output, outputSize, "data sender shutdown", _TRUNCATE);
             break;
         default:
             strncpy_s(output, outputSize, ("Invalid Function: function [" + std::string(function) + "] hash [" + std::to_string(hash(function)) + "]").c_str(), _TRUNCATE);
@@ -70,6 +73,11 @@ void __stdcall RVExtensionArgs(char *output, int outputSize, const char *functio
                     return;
                 }
 
+                if (!globals::dataProcessor->running()) {
+                    strncpy_s(output, outputSize, "Data processor is not running. Aborting", _TRUNCATE);
+                    return;
+                }
+
                 if (argsCnt < 2) {
                     strncpy_s(output, outputSize, "Too few arguments", _TRUNCATE);
                     return;
@@ -78,9 +86,9 @@ void __stdcall RVExtensionArgs(char *output, int outputSize, const char *functio
                 const char *argument0 = args[0];
                 const char *argument1 = args[1];
 
-                for (int i = 2; i < (argsCnt - 2); i++) {
-                    char *argument = const_cast<char*>(args[i]);
-                    globals::dataProcessor->sendData(argument, std::strlen(argument));
+                for (int i = 2; i < argsCnt; i++) {
+                    std::string argument = args[i];
+                    globals::dataProcessor->sendData(potato::packetTypes::NONE, argument.data(), argument.size());
                 }
 
                 strncpy_s(output, outputSize, "Data Sent", _TRUNCATE);

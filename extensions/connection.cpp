@@ -1,4 +1,6 @@
 #include "connection.hpp"
+#include "spdlog/spdlog.h"
+#include <string>
 
 connection::connection() : 
     m_socket(m_ioContext) 
@@ -10,5 +12,9 @@ connection::connection() :
 }
 
 void connection::send(void *data, uint64_t sizeInBytes) {
-    m_socket.send_to(asio::buffer(data, sizeInBytes), m_endpoint);
+    try {
+        m_socket.send_to(asio::buffer(data, sizeInBytes), m_endpoint);
+    } catch (std::exception &e) {
+        spdlog::error(e.what());
+    }
 }

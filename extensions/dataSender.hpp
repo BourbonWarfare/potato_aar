@@ -2,15 +2,17 @@
 // Sends data to external server on LAN to process data
 #pragma once
 #include "extensionDllExportInfo.hpp"
+#include <cstdint>
 #include <vector>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include "connection.hpp"
+#include "bw/packetTypes.hpp"
 
 class dataSender {
     private:
-        using dataType = char;
+        using dataType = std::uint8_t;
 
         std::vector<dataType> m_buffers[2];
         unsigned int m_bufferIndex = 0;
@@ -37,6 +39,7 @@ class dataSender {
         POTATO_AAR_SYMBOL dataSender();
         POTATO_AAR_SYMBOL ~dataSender();
 
-        POTATO_AAR_SYMBOL void sendData(void *data, uint64_t size);
+        POTATO_AAR_SYMBOL void sendData(potato::packetTypes type, void *data, uint64_t size);
+        POTATO_AAR_SYMBOL bool running() const;
 
 };

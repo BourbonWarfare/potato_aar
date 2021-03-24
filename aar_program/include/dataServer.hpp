@@ -2,7 +2,6 @@
 // The server which data is recieved from ARMA and processed into relevant meta-data
 #pragma once
 #include "asio.hpp"
-#include <array>
 
 class dataServer {
     private:
@@ -13,10 +12,9 @@ class dataServer {
         asio::ip::udp::socket m_socket;
         asio::ip::udp::endpoint m_remoteEndpoint;
 
-        std::array<char, c_maxMessageSizeBytes> m_receiveBuffer;
+        bool m_running = true;
 
-        void handleMessage(const asio::error_code &error, std::size_t messageInBytes);
-        void startReceive();
+        void handleMessages();
 
     public:
         dataServer();
