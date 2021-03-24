@@ -5,7 +5,7 @@
 int main() {
     dataSender sender;
 
-    std::string message = "foo";
+    std::string message = "1234";
     sender.sendData(potato::packetTypes::NONE, message.data(), 3);
 
     while(true) {}

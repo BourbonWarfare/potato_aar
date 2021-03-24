@@ -23,8 +23,10 @@ void dataSender::send() {
 
         // prepend header and send across network
         potato::packetHeader header;
-        header.sizeInBytes = m_currentSendBuffer->size() * sizeof(dataType);
+        header.sizeInBytes = static_cast<uint16_t>(m_currentSendBuffer->size() * sizeof(dataType));
         header.type = potato::packetTypes::DEBUG_MESSAGE;
+        header.packetNumber = m_currentPacketNumber++;
+        header.packetGroup = m_currentPacketGroup++;
 
         std::vector<uint8_t> data;
         data.resize(potato::packetHeader::c_headerSizeBytes);
@@ -38,6 +40,8 @@ void dataSender::send() {
 
         m_connection.send(data.data(), data.size() * sizeof(dataType));
         m_currentSendBuffer->clear();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(c_sendFrequencyMilliseconds));
     }
 }
 

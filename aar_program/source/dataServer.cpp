@@ -1,6 +1,7 @@
 #include "dataServer.hpp"
 #include "spdlog/spdlog.h"
 #include "bw/packetHeader.hpp"
+#include "bw/armaTypes.hpp"
 #include <array>
 #include <vector>
 
@@ -16,14 +17,24 @@ void dataServer::handleMessages() {
             potato::packetHeader header = *reinterpret_cast<potato::packetHeader*>(receiveBuffer.data());
             std::uint8_t *data = receiveBuffer.data() + potato::packetHeader::c_headerSizeBytes;
 
-            std::vector<std::uint8_t> message;
-            message.resize(header.sizeInBytes);
-            for (uint16_t i = 0; i < header.sizeInBytes; i++) {
-                message[i] = data[i];
-            }
-            message.push_back('\0');
+            // we know data is in format <type data \0>
+            for (int i = 0; i < header.sizeInBytes; i++) {
+                potato::variableType type = *reinterpret_cast<potato::variableType*>(data + i);
+                i += sizeof(potato::variableType);
 
-            spdlog::info(message.data());
+                // parse until we find end of string
+                std::string dataString = "";
+                for (int j = 0; j < header.sizeInBytes - i; j++) {
+                    char currentChar = data[i + j];
+                    if (currentChar == '|') {
+                        i += j;
+                        break;
+                    }
+                    dataString += currentChar;
+                }
+
+                spdlog::info("{} {}", potato::getTypeString(type), dataString);
+            }
         }
         catch (std::exception &e) {
             spdlog::error(e.what());

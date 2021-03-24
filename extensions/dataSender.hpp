@@ -14,6 +14,8 @@ class dataSender {
     private:
         using dataType = std::uint8_t;
 
+        static constexpr int c_sendFrequencyMilliseconds = 100;
+
         std::vector<dataType> m_buffers[2];
         unsigned int m_bufferIndex = 0;
 
@@ -25,6 +27,8 @@ class dataSender {
 
         bool m_running = true;
         bool m_newData = false;
+        uint16_t m_currentPacketNumber = 0;
+        uint8_t m_currentPacketGroup = 0; // packets can be split up, but in the same group. This tracks that
         std::thread m_sendThread;
 
         std::mutex m_swapMutex;

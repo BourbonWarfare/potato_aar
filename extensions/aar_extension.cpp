@@ -5,8 +5,11 @@
 #include <memory>
 #include <exception>
 #include <string>
+#include <vector>
+#include <charconv>
 #include "connection.hpp"
 #include "dataSender.hpp"
+#include "bw/armaTypes.hpp"
 
 using asio::ip::udp;
 
@@ -14,6 +17,22 @@ using asio::ip::udp;
 namespace globals {
     constexpr auto versionString = "v1.0.0";
     std::unique_ptr<dataSender> dataProcessor{};
+}
+
+namespace potato {
+    bool isNumber(std::string_view string) {
+        return !string.empty() && std::find_if(string.begin(), string.end(), [](unsigned char c){ return !std::isdigit(c); }) != string.end();
+    }
+
+    void formatMessage(char *output, int outputSize, std::string_view message) {
+        strncpy_s(output, outputSize, message.data(), _TRUNCATE);
+    }
+
+    void copyDataToBuffer(void *data, int dataSize, std::vector<char> &buffer) {
+        for (int i = 0; i < dataSize; i++) {
+            buffer.push_back(*(reinterpret_cast<char*>(data) + i));
+        }
+    }
 }
 
 // djb2 hash
@@ -38,7 +57,7 @@ void __stdcall RVExtensionRegisterCallback(int(*callbackProc)(char const *name, 
 }
 
 void __stdcall RVExtensionVersion(char *output, int outputSize) {
-    strncpy_s(output, outputSize, globals::versionString, outputSize);
+    potato::formatMessage(output, outputSize, globals::versionString);
 }
 
 void __stdcall RVExtension(char *output, int outputSize, const char *function) {
@@ -49,17 +68,17 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function) {
         case hash("startup"):
             try {
                 globals::dataProcessor = std::make_unique<dataSender>();
-                strncpy_s(output, outputSize, "data sender started", _TRUNCATE);
+                potato::formatMessage(output, outputSize, "data sender started");
             } catch (const std::exception &e) {
-                strncpy_s(output, outputSize, e.what(), _TRUNCATE);
+                potato::formatMessage(output, outputSize, e.what());
             };
             break;
         case hash("shutdown"):
             globals::dataProcessor.reset();
-            strncpy_s(output, outputSize, "data sender shutdown", _TRUNCATE);
+            potato::formatMessage(output, outputSize, "data sender shutdown");
             break;
         default:
-            strncpy_s(output, outputSize, ("Invalid Function: function [" + std::string(function) + "] hash [" + std::to_string(hash(function)) + "]").c_str(), _TRUNCATE);
+            potato::formatMessage(output, outputSize, ("Invalid Function: function [" + std::string(function) + "] hash [" + std::to_string(hash(function)) + "]").c_str());
             break;
     }
 }
@@ -69,33 +88,48 @@ void __stdcall RVExtensionArgs(char *output, int outputSize, const char *functio
         case hash("processData"):
             {
                 if (!globals::dataProcessor) {
-                    strncpy_s(output, outputSize, "Cannot process data when we haven't started the processor", _TRUNCATE);
+                    potato::formatMessage(output, outputSize, "Cannot process data when we haven't started the processor");
                     return;
                 }
 
                 if (!globals::dataProcessor->running()) {
-                    strncpy_s(output, outputSize, "Data processor is not running. Aborting", _TRUNCATE);
+                    potato::formatMessage(output, outputSize, "Data processor is not running. Aborting");
                     return;
                 }
 
                 if (argsCnt < 2) {
-                    strncpy_s(output, outputSize, "Too few arguments", _TRUNCATE);
+                    potato::formatMessage(output, outputSize, "Too few arguments");
                     return;
                 }
 
-                const char *argument0 = args[0];
-                const char *argument1 = args[1];
+                std::string arg0 = args[0];
+                std::string arg1 = args[1];
 
-                for (int i = 2; i < argsCnt; i++) {
-                    std::string argument = args[i];
-                    globals::dataProcessor->sendData(potato::packetTypes::NONE, argument.data(), argument.size());
+                if (!potato::isNumber(arg0)) {
+                    potato::formatMessage(output, outputSize, "Argument 0 has to be number");
+                    return;
                 }
 
-                strncpy_s(output, outputSize, "Data Sent", _TRUNCATE);
+                unsigned long typeInt;
+                std::from_chars(arg0.data(), arg0.data() + arg0.size(), typeInt);
+                potato::packetTypes packetType = static_cast<potato::packetTypes>(typeInt);
+                
+                std::vector<char> dataToSend;
+                for (int i = 2; i < argsCnt; i++) {
+                    potato::variableType argumentType = potato::typeResolver(args[i]);
+                    // allow us to re-parse the data since we don't know the size
+                    std::string modifiedArgument = args[i] + '|'; // need a character that is counted in size(). Change in dataServer.cpp if you change this
+
+                    potato::copyDataToBuffer(&argumentType, sizeof(potato::variableType), dataToSend);
+                    potato::copyDataToBuffer(modifiedArgument.data(), modifiedArgument.size(), dataToSend);
+                }
+
+                globals::dataProcessor->sendData(packetType, dataToSend.data(), dataToSend.size());
+                potato::formatMessage(output, outputSize, "Data Sent");
             }
             break;
         default:
-            strncpy_s(output, outputSize, ("Invalid Function: function [" + std::string(function) + "] hash [" + std::to_string(hash(function)) + "]").c_str(), _TRUNCATE);
+            potato::formatMessage(output, outputSize, ("Invalid Function: function [" + std::string(function) + "] hash [" + std::to_string(hash(function)) + "]").c_str());
             break;
         }
 }
