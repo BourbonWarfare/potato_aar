@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2.0)
 project (potato_aar_extension)
 set(PROJECT_TEST_NAME ${PROJECT_NAME}_tests)
 
-file (GLOB SOURCES "*.cpp")
+file (GLOB SOURCES "*.cpp" "*.hpp")
 list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/aar_extension_tests.cpp")
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
