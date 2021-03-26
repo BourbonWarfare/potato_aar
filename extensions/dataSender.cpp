@@ -64,7 +64,7 @@ void dataSender::sendData(potato::packetTypes type, void *data, uint64_t size) {
     std::unique_lock<std::mutex> lock(m_swapMutex);
 
     for (uint64_t i = 0; i < size; i++) {
-        m_currentPopulateBuffer->push_back(reinterpret_cast<char*>(data)[i]);
+        m_currentPopulateBuffer->push_back(reinterpret_cast<std::uint8_t*>(data)[i]);
     }
 
     m_newData = true;

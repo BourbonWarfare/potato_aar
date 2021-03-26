@@ -21,16 +21,16 @@ namespace globals {
 
 namespace potato {
     bool isNumber(std::string_view string) {
-        return !string.empty() && std::find_if(string.begin(), string.end(), [](unsigned char c){ return !std::isdigit(c); }) != string.end();
+        return !string.empty() && std::find_if(string.begin(), string.end(), [](unsigned char c){ return std::isdigit(c); }) != string.end();
     }
 
     void formatMessage(char *output, int outputSize, std::string_view message) {
         strncpy_s(output, outputSize, message.data(), _TRUNCATE);
     }
 
-    void copyDataToBuffer(void *data, int dataSize, std::vector<char> &buffer) {
+    void copyDataToBuffer(void *data, int dataSize, std::vector<std::uint8_t> &buffer) {
         for (int i = 0; i < dataSize; i++) {
-            buffer.push_back(*(reinterpret_cast<char*>(data) + i));
+            buffer.push_back(*(reinterpret_cast<std::uint8_t*>(data) + i));
         }
     }
 }
@@ -114,18 +114,22 @@ void __stdcall RVExtensionArgs(char *output, int outputSize, const char *functio
                 std::from_chars(arg0.data(), arg0.data() + arg0.size(), typeInt);
                 potato::packetTypes packetType = static_cast<potato::packetTypes>(typeInt);
                 
-                std::vector<char> dataToSend;
+                std::vector<std::uint8_t> dataToSend;
                 for (int i = 2; i < argsCnt; i++) {
-                    potato::variableType argumentType = potato::typeResolver(args[i]);
+                    potato::variableType argumentType = potato::getTypeFromString(args[i]);
                     // allow us to re-parse the data since we don't know the size
-                    std::string modifiedArgument = args[i] + '|'; // need a character that is counted in size(). Change in dataServer.cpp if you change this
+                    std::unique_ptr<potato::baseARMAVariable> armaVariable = potato::getARMAVariableFromType(argumentType);
+                    armaVariable->fromString(args[i]);
+
+                    std::intptr_t sizeOfVariable = armaVariable->getDataPointerSize();
 
                     potato::copyDataToBuffer(&argumentType, sizeof(potato::variableType), dataToSend);
-                    potato::copyDataToBuffer(modifiedArgument.data(), modifiedArgument.size(), dataToSend);
+                    potato::copyDataToBuffer(&sizeOfVariable, sizeof(sizeOfVariable), dataToSend);
+                    potato::copyDataToBuffer(armaVariable->getDataPointer(), armaVariable->getDataPointerSize(), dataToSend);
                 }
 
                 globals::dataProcessor->sendData(packetType, dataToSend.data(), dataToSend.size());
-                potato::formatMessage(output, outputSize, "Data Sent");
+                potato::formatMessage(output, outputSize, "Data Sent with size " + std::to_string(dataToSend.size()) + " arg[2] = " + args[2]);
             }
             break;
         default:
