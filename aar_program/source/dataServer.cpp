@@ -47,7 +47,7 @@ void dataServer::handleMessages() {
                         // security risk, but this is LAN so it doesn't matter
                         // if this program isn't LAN anymore and this still exists, uh oh you have a security hole.
                         // The `set` function blindly sets the pointer to whatever type `type` is, so if a false packet comes through it could overrun the buffer and have access to program memory
-                        variablesInPacket.back()->set(dataBuffer.data(), type);
+                        variablesInPacket.back()->set(dataBuffer.data(), type, sizeOfType);
                     }
                 }
 

@@ -331,7 +331,7 @@ namespace potato {
         #undef RETURN_APPLICABLE_TYPE
     }
 
-    bool baseARMAVariable::set(void *data, variableType desiredType, std::size_t expectedSize) {
+    inline bool baseARMAVariable::set(void *data, variableType desiredType, std::size_t expectedSize) {
         if (desiredType != type) {
             return false;
         }
