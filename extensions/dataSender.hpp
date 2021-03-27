@@ -16,14 +16,19 @@ class dataSender {
 
         static constexpr int c_sendFrequencyMilliseconds = 100;
 
-        std::vector<dataType> m_buffers[2];
+        struct sendMetaData {
+            std::vector<dataType> buffer;
+            potato::packetTypes packetType = potato::packetTypes::NONE;
+        };
+
+        std::vector<sendMetaData> m_buffers[2];
         unsigned int m_bufferIndex = 0;
 
         // buffer that is sending data
-        std::vector<dataType> *m_currentSendBuffer = &m_buffers[0];
+        std::vector<sendMetaData> *m_currentSendBuffer = &m_buffers[0];
 
         // buffer that is being populated from SQF
-        std::vector<dataType> *m_currentPopulateBuffer = &m_buffers[1];
+        std::vector<sendMetaData> *m_currentPopulateBuffer = &m_buffers[1];
 
         bool m_running = true;
         bool m_newData = false;

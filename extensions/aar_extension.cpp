@@ -117,7 +117,6 @@ void __stdcall RVExtensionArgs(char *output, int outputSize, const char *functio
                 std::vector<std::uint8_t> dataToSend;
                 for (int i = 2; i < argsCnt; i++) {
                     potato::variableType argumentType = potato::getTypeFromString(args[i]);
-                    // allow us to re-parse the data since we don't know the size
                     std::unique_ptr<potato::baseARMAVariable> armaVariable = potato::getARMAVariableFromType(argumentType);
                     armaVariable->fromString(args[i]);
 

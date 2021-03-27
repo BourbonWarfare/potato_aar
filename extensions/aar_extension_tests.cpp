@@ -31,11 +31,16 @@ int main() {
         double num;
         args[i]->convert(num);
 
+        std::intptr_t sizeOfVariable = args[i]->getDataPointerSize();
+
         copyDataToBuffer(&argumentType, sizeof(potato::variableType), dataToSend);
+        copyDataToBuffer(&sizeOfVariable, sizeof(sizeOfVariable), dataToSend);
         copyDataToBuffer(&num, sizeof(num), dataToSend);
     }
 
-    sender.sendData(potato::packetTypes::NONE, dataToSend.data(), dataToSend.size());
+    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
 
     while(true) {}
 

@@ -21,4 +21,5 @@ class dataServer : public eventSubscriber {
 
     public:
         dataServer();
+        ~dataServer();
 };

@@ -1,5 +1,6 @@
 #include "dataSender.hpp"
 #include "bw/packetHeader.hpp"
+#include "spdlog/spdlog.h"
 
 void dataSender::swapBuffers()  {
     m_currentPopulateBuffer = &m_buffers[m_bufferIndex];
@@ -22,25 +23,42 @@ void dataSender::send() {
         m_newData = false;
 
         // prepend header and send across network
-        potato::packetHeader header;
-        header.sizeInBytes = static_cast<uint16_t>(m_currentSendBuffer->size() * sizeof(dataType));
-        header.type = potato::packetTypes::DEBUG_MESSAGE;
-        header.packetNumber = m_currentPacketNumber++;
-        header.packetGroup = m_currentPacketGroup++;
-
+        std::uint16_t totalSize = sizeof(totalSize);
         std::vector<uint8_t> data;
-        data.resize(potato::packetHeader::c_headerSizeBytes);
+        for (const auto &packetMetaData : *m_currentSendBuffer) {
+            std::vector<uint8_t> thisData;
+            potato::packetHeader header;
+            header.sizeInBytes = static_cast<uint16_t>(packetMetaData.buffer.size() * sizeof(dataType));
+            header.type = packetMetaData.packetType;
+            header.packetNumber = m_currentPacketNumber++;
+            header.packetGroup = m_currentPacketGroup++;
+            
+            thisData.resize(potato::packetHeader::c_headerSizeBytes);
+            // convert header data in memory to data we can send
+            for (uint8_t i = 0; i < potato::packetHeader::c_headerSizeBytes; i++) {
+                thisData[i] = reinterpret_cast<char*>(&header)[i];
+            }
 
-        // convert header data in memory to data we can send
-        for (uint8_t i = 0; i < potato::packetHeader::c_headerSizeBytes; i++) {
-            data[i] = reinterpret_cast<char*>(&header)[i];
+            thisData.insert(thisData.end(), packetMetaData.buffer.begin(), packetMetaData.buffer.end());
+
+            // I know we can refactor this to make it simpler, but my sleep deprived brain cant think that much right now
+            data.insert(data.end(), thisData.begin(), thisData.end());
+
+            totalSize += header.sizeInBytes + potato::packetHeader::c_headerSizeBytes;
         }
 
-        data.insert(data.end(), m_currentSendBuffer->begin(), m_currentSendBuffer->end());
+        // prepend total packet size so we can read later
+        std::uint8_t totalSizeData[2] = {
+            *(reinterpret_cast<std::uint8_t*>(&totalSize) + 0),
+            *(reinterpret_cast<std::uint8_t*>(&totalSize) + 1)
+        };
+
+        data.insert(data.begin(), std::begin(totalSizeData), std::end(totalSizeData));
 
         m_connection.send(data.data(), data.size() * sizeof(dataType));
         m_currentSendBuffer->clear();
 
+        spdlog::info("sent packet with {} bytes [{}, {}]", totalSize, data.size(), *reinterpret_cast<std::uint16_t*>(&totalSizeData));
         std::this_thread::sleep_for(std::chrono::milliseconds(c_sendFrequencyMilliseconds));
     }
 }
@@ -63,8 +81,10 @@ bool dataSender::running() const {
 void dataSender::sendData(potato::packetTypes type, void *data, uint64_t size) {
     std::unique_lock<std::mutex> lock(m_swapMutex);
 
+    m_currentPopulateBuffer->emplace_back();
+    m_currentPopulateBuffer->back().packetType = type;
     for (uint64_t i = 0; i < size; i++) {
-        m_currentPopulateBuffer->push_back(reinterpret_cast<std::uint8_t*>(data)[i]);
+        m_currentPopulateBuffer->back().buffer.push_back(reinterpret_cast<std::uint8_t*>(data)[i]);
     }
 
     m_newData = true;
