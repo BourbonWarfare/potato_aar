@@ -38,9 +38,18 @@ int main() {
         copyDataToBuffer(&num, sizeof(num), dataToSend);
     }
 
-    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
-    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
-    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    //sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    //sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    //sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+
+    std::unique_ptr<potato::baseARMAVariable> armaArray = std::make_unique<potato::armaArray>();
+    armaArray->fromString("[\"first\",1,2,3,4,5,6,7,8,9,0,true,false,[1,2,3,\"test\"]]");
+
+    std::unique_ptr<potato::baseARMAVariable> armaArray2 = std::make_unique<potato::armaArray>();
+    armaArray2->fromString(armaArray->toString());
+
+    spdlog::info("array: {}", armaArray->toString());
+    spdlog::info("array: {}", armaArray2->toString());
 
     while(true) {}
 

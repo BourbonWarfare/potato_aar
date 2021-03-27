@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <memory>
 #include <charconv>
+#include <stack>
 
 namespace potato {
 	enum class variableType : uint8_t {
@@ -84,6 +85,10 @@ namespace potato {
 		return variableType::NUMBER;
 	}
 
+    inline std::unique_ptr<baseARMAVariable> getARMAVariableFromType(variableType wantedType);
+
+    // We use polymorphism to be able to have templated types that behave differently at compile time
+    // that means that all of these variables are on the heap, but that shouldnt matter too much
     struct baseARMAVariable {
         const variableType type = variableType::UNKNOWN;
         virtual std::string toString() const { return "base"; }
@@ -92,6 +97,8 @@ namespace potato {
         virtual void *getDataPointer() const { return dataPtr; }
         virtual std::intptr_t getDataPointerSize() const = 0;
 
+        // convert the data stored inside to whatever we want to output
+        // prevent mapping to wrong type by checking the type coming in
         template<typename T>
         bool convert(T &output) {
             if (type != getVariableType<T>()) {
@@ -101,6 +108,8 @@ namespace potato {
             return true;
         }
 
+        // set the internal data to whatever
+        // this isn't templated to allow setting memory buffers to the internal data
         bool set(void *data, variableType desiredType) {
             if (desiredType != type) {
                 return false;
@@ -124,7 +133,7 @@ namespace potato {
                     }
                     break;
                 case variableType::ARRAY: {
-                        //std::vector<std::unique_ptr<baseARMAVariable>> *dataArray = reinterpret_cast<std::vector<std::unique_ptr<baseARMAVariable>>*>(dataPtr);
+                        std::vector<std::unique_ptr<baseARMAVariable>> *dataArray = reinterpret_cast<std::vector<std::unique_ptr<baseARMAVariable>>*>(dataPtr);
                         //*dataArray = *static_cast<std::vector<std::unique_ptr<baseARMAVariable>>*>(data);
                     }
                     break;
@@ -146,6 +155,11 @@ namespace potato {
         std::intptr_t getDataPointerSize() const override final { return 0; }
     };
 
+    using armaNumber = armaVariable<variableType::NUMBER>;
+    using armaString = armaVariable<variableType::STRING>;
+    using armaBool = armaVariable<variableType::BOOLEAN>;
+    using armaArray = armaVariable<variableType::ARRAY>;
+
 	template <>
 	struct armaVariable<variableType::NUMBER> : baseARMAVariable {
 		double data = 0.0;
@@ -157,7 +171,7 @@ namespace potato {
         std::intptr_t getDataPointerSize() const override final { return sizeof(data); }
 
 		armaVariable() {
-			dataPtr = reinterpret_cast<std::uint8_t*>(this) + offsetof(armaVariable<variableType::NUMBER>, data);
+			dataPtr = &data;
             *const_cast<variableType*>(&type) = variableType::NUMBER;
 		}
 	};
@@ -174,7 +188,7 @@ namespace potato {
         std::intptr_t getDataPointerSize() const override final { return data.size(); }
 
         armaVariable() {
-            dataPtr = reinterpret_cast<std::uint8_t*>(this) + offsetof(armaVariable<variableType::STRING>, data);
+            dataPtr = &data;
             *const_cast<variableType*>(&type) = variableType::STRING;
         }
 	};
@@ -190,7 +204,7 @@ namespace potato {
         std::intptr_t getDataPointerSize() const override final { return sizeof(data); }
 
         armaVariable() {
-            dataPtr = reinterpret_cast<std::uint8_t*>(this) + offsetof(armaVariable<variableType::BOOLEAN>, data);
+            dataPtr = &data;
             *const_cast<variableType*>(&type) = variableType::BOOLEAN;
         }
 	};
@@ -198,16 +212,90 @@ namespace potato {
 	template <>
 	struct armaVariable<variableType::ARRAY> : baseARMAVariable {
 		std::vector<std::unique_ptr<baseARMAVariable>> data = {};
-		std::string toString() const override final { return "not implemented"; }
+
+		std::string toString() const override final {
+            std::string formattedString = "[";
+            for (const auto &var : data) {
+                formattedString += var->toString() + ", ";
+            }
+
+            // if we only have the starting bracket, don't delete it. Otherwise delete the trailing comma
+            if (formattedString.size() > 1) {
+                formattedString.erase(formattedString.end() - 1);
+                formattedString.erase(formattedString.end() - 1);
+            }
+
+            formattedString += ']';
+            return formattedString;
+        }
+
         void fromString(std::string_view str) override final {
-            // fukin who knows man
+            int currentIndex = 1; // we know the first index is '['
+            std::string dataString = "";
+            bool inStringType = false;
+
+            std::stack<armaArray*> arrayStack;
+            arrayStack.push(this);
+
+            using arrayVector = std::vector<std::unique_ptr<baseARMAVariable>>;
+
+            // lambda to push values onto the vector. We need this twice in the parsing, and it is quite ugly so a lambda makes it nicer to read
+            auto pushData = [] (arrayVector &dataVector, std::string_view data) {
+                variableType varType = getTypeFromString(data);
+                std::unique_ptr<baseARMAVariable> armaVariable = std::move(getARMAVariableFromType(varType));
+                armaVariable->fromString(data);
+                dataVector.push_back(std::move(armaVariable));
+            };
+
+            // parse array string. We have two states, we are either processing a string or we aren't.
+            // If we aren't parsing a string, we read the values until we find a comma and then push it to the data vector
+            // If we find the start of a new array, we push a new array onto the data vector
+            // If we parse a string, we can't exit on a comma until we exit the string, so we process until we find an end quote
+            while (!arrayStack.empty()) {
+                if (currentIndex >= str.size()) {
+                    throw std::exception("Overran string when creating array type");
+                }
+
+                if (str[currentIndex] == '[') {
+                    dataString = "";
+
+                    data.emplace_back(std::make_unique<armaVariable<variableType::ARRAY>>());
+                    arrayStack.push(static_cast<armaVariable<variableType::ARRAY>*>(data.back().get()));
+                } else if (str[currentIndex] == ']') {
+                    if (dataString != "") {
+                        pushData(arrayStack.top()->data, dataString);
+                    }
+                    dataString = "";
+                    arrayStack.pop();
+                } else {
+                    if (inStringType) {
+                        if (str[currentIndex] == '"') {
+                            inStringType = false;
+                        }
+                        dataString += str[currentIndex];
+                    }
+                    else {
+                        if (str[currentIndex] == ',') {
+                            pushData(arrayStack.top()->data, dataString);
+                            dataString = "";
+                        } else if (str[currentIndex] != ' ') {
+                            dataString += str[currentIndex];
+                        }
+
+                        if (str[currentIndex] == '"') {
+                            inStringType = true;
+                        }
+                    }
+                }
+                currentIndex++;
+            }
         }
 
         void *getDataPointer() const override final { return nullptr; }
         std::intptr_t getDataPointerSize() const override final { return 0; }
 
         armaVariable() {
-            dataPtr = reinterpret_cast<std::uint8_t*>(this) + offsetof(armaVariable<variableType::ARRAY>, data);
+            dataPtr = &data;
             *const_cast<variableType*>(&type) = variableType::ARRAY;
         }
 	};
