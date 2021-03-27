@@ -342,18 +342,24 @@ namespace potato {
                 double *dataDouble = reinterpret_cast<double*>(dataPtr);
                 *dataDouble = *static_cast<double*>(data);
             }
-                                     break;
+            break;
             case variableType::STRING: {
                 // this doesn't work. We need to set the internal string buffer to the data
-                //std::string *dataString = reinterpret_cast<std::string*>(dataPtr);
-                //*dataString = *static_cast<std::string*>(data);
+                std::vector<char> inputString(expectedSize + 1);
+                for (std::size_t i = 0; i < expectedSize; i++) {
+                    inputString[i] = *(static_cast<std::uint8_t*>(data) + i);
+                }
+                inputString[expectedSize] = '\0';
+
+                std::string *dataString = reinterpret_cast<std::string*>(dataPtr);
+                *dataString = inputString.data();
             }
-                                     break;
+            break;
             case variableType::BOOLEAN: {
                 bool *dataBool = reinterpret_cast<bool *>(dataPtr);
                 *dataBool = *static_cast<bool*>(data);
             }
-                                      break;
+            break;
             case variableType::ARRAY: {
                 armaArray *thisArray = static_cast<armaArray*>(this);
                 std::uint8_t *dataBytePtr = static_cast<std::uint8_t*>(data);
