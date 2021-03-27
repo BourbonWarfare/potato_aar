@@ -39,6 +39,7 @@ void dataSender::send() {
                 thisData[i] = reinterpret_cast<char*>(&header)[i];
             }
 
+            // shitty name, but thisData refers to the packet currently being worked on
             thisData.insert(thisData.end(), packetMetaData.buffer.begin(), packetMetaData.buffer.end());
 
             // I know we can refactor this to make it simpler, but my sleep deprived brain cant think that much right now
@@ -53,6 +54,7 @@ void dataSender::send() {
             *(reinterpret_cast<std::uint8_t*>(&totalSize) + 1)
         };
 
+        // insert size data at beginning of header so we avoid buffer overruns in server
         data.insert(data.begin(), std::begin(totalSizeData), std::end(totalSizeData));
 
         m_connection.send(data.data(), data.size() * sizeof(dataType));

@@ -1,3 +1,5 @@
+// shitty test file
+// should split these into unit-tests, but thats a lot of work for me at the moment
 #include "spdlog/spdlog.h"
 #include "dataSender.hpp"
 #include "bw/armaTypes.hpp"

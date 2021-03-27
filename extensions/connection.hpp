@@ -1,5 +1,5 @@
 // connection.hpp
-// Handles a connection for sending data on
+// Handles a UDP connection for sending data on. Wrapper for ASIO
 #pragma once
 #include "extensionDllExportInfo.hpp"
 #include <asio.hpp>

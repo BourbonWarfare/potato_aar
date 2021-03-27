@@ -18,8 +18,10 @@ class eventSubscriber {
         std::unordered_map<potato::packetTypes, std::vector<eventSignature>> m_eventHandlers;
 
     protected:
+        // Signals event. Runs through m_eventHandlers and calls each function
         void signal(potato::packetTypes packetType, variableType dataFromPacket) const;
 
     public:
+        // Subscribe a function to be called when we receive a packet of type
         void subscribe(potato::packetTypes packetType, eventSignature function);
 };

@@ -2,6 +2,7 @@
 
 void eventSubscriber::signal(potato::packetTypes packetType, variableType dataFromPacket) const {
     if (m_eventHandlers.find(packetType) == m_eventHandlers.end()) { return; }
+
     for (auto &subscriberEvent : m_eventHandlers.at(packetType)) {
         subscriberEvent(dataFromPacket);
     }

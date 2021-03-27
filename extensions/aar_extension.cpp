@@ -97,6 +97,7 @@ void __stdcall RVExtensionArgs(char *output, int outputSize, const char *functio
                     return;
                 }
 
+                // I reserved two arguments. First one denotes packet type, second one is unused as of 21/03/27
                 if (argsCnt < 2) {
                     potato::formatMessage(output, outputSize, "Too few arguments");
                     return;

@@ -11,6 +11,7 @@
 #include <stack>
 
 namespace potato {
+    // The variable types we support coming from ARMA
 	enum class variableType : uint8_t {
 		UNKNOWN,
 		NUMBER,
@@ -21,6 +22,7 @@ namespace potato {
 
     struct baseARMAVariable;
 
+    // Return the type as a string
     inline std::string_view getTypeString(variableType type) {
 		switch (type) {
 			case variableType::UNKNOWN:
@@ -44,6 +46,7 @@ namespace potato {
 		}
 	}
 
+    // Return the ARMA variableType from C++ type
     template<typename T>
     constexpr variableType getVariableType() {
         if constexpr (std::is_arithmetic<T>::value) {
@@ -65,6 +68,7 @@ namespace potato {
         return variableType::UNKNOWN;
     }
 
+    // Return the ARMA variableType from a string representation of data
 	inline variableType getTypeFromString(std::string_view data) {
 		if (data.empty()) {
 			return variableType::UNKNOWN;
@@ -85,16 +89,25 @@ namespace potato {
 		return variableType::NUMBER;
 	}
 
+    // Return a pointer to ARMA type representation from ARMA type enum
     inline std::unique_ptr<baseARMAVariable> getARMAVariableFromType(variableType wantedType);
 
+    // The base class for all ARMA types within C++
     // We use polymorphism to be able to have templated types that behave differently at compile time
     // that means that all of these variables are on the heap, but that shouldnt matter too much
     struct baseARMAVariable {
         const variableType type = variableType::UNKNOWN;
+
+        // Returns the variable as a string
         virtual std::string toString() const { return "base"; }
+
+        // Parses string and converts to data
         virtual void fromString(std::string_view str) = 0;
 
+        // Return this type in memory
         virtual void *getDataPointer() const { return dataPtr; }
+
+        // Return how many bytes this type uses
         virtual std::intptr_t getDataPointerSize() const = 0;
 
         // convert the data stored inside to whatever we want to output
@@ -344,7 +357,7 @@ namespace potato {
             }
             break;
             case variableType::STRING: {
-                // this doesn't work. We need to set the internal string buffer to the data
+                // Copy data from pointer to buffer, and then convert into string
                 std::vector<char> inputString(expectedSize + 1);
                 for (std::size_t i = 0; i < expectedSize; i++) {
                     inputString[i] = *(static_cast<std::uint8_t*>(data) + i);
@@ -361,6 +374,7 @@ namespace potato {
             }
             break;
             case variableType::ARRAY: {
+                // Copy data from buffer. This assumes that the data is setup through armaArray::toDataBuffer 
                 armaArray *thisArray = static_cast<armaArray*>(this);
                 std::uint8_t *dataBytePtr = static_cast<std::uint8_t*>(data);
                 for (int i = 0; i < expectedSize; i++) {

@@ -21,12 +21,14 @@ void dataServer::handleMessages() {
 
             std::uint16_t totalPacketSize = *reinterpret_cast<std::uint16_t*>(receiveBuffer.data());
 
+            // Convert binary data into object data
             for (int offset = sizeof(totalPacketSize); offset < totalPacketSize; offset) {
                 potato::packetHeader header = *reinterpret_cast<potato::packetHeader*>(receiveBuffer.data() + offset);
                 offset += potato::packetHeader::c_headerSizeBytes;
 
                 std::uint8_t *data = receiveBuffer.data() + offset;
 
+                // Process sub-packet within major-packet
                 for (int i = 0; i < header.sizeInBytes; i) {
                     potato::variableType type = *reinterpret_cast<potato::variableType*>(data + i);
                     i += sizeof(potato::variableType);
@@ -34,7 +36,7 @@ void dataServer::handleMessages() {
                     std::intptr_t sizeOfType = *reinterpret_cast<std::intptr_t*>(data + i);
                     i += sizeof(sizeOfType);
 
-                    // parse until we find end of string
+                    // get binary data of object
                     std::vector<std::uint8_t> dataBuffer = {};
 
                     for (int j = 0; j < sizeOfType; j++) {
