@@ -17,11 +17,11 @@ int main() {
     std::vector<std::unique_ptr<potato::baseARMAVariable>> args;
     args.push_back(std::make_unique<potato::armaVariable<potato::variableType::NUMBER>>());
     double data = 123.0;
-    args.back()->set(&data, potato::variableType::NUMBER);
+    args.back()->set(&data, potato::variableType::NUMBER, sizeof(data));
 
     args.push_back(std::make_unique<potato::armaVariable<potato::variableType::NUMBER>>());
     data = 456.0;
-    args.back()->set(&data, potato::variableType::NUMBER);
+    args.back()->set(&data, potato::variableType::NUMBER, sizeof(data));
 
     std::vector<std::uint8_t> dataToSend;
     for (int i = 0; i < args.size(); i++) {
@@ -44,12 +44,17 @@ int main() {
 
     std::unique_ptr<potato::baseARMAVariable> armaArray = std::make_unique<potato::armaArray>();
     armaArray->fromString("[\"first\",1,2,3,4,5,6,7,8,9,0,true,false,[1,2,3,\"test\"]]");
+    void *dataPtr = armaArray->getDataPointer();
 
     std::unique_ptr<potato::baseARMAVariable> armaArray2 = std::make_unique<potato::armaArray>();
     armaArray2->fromString(armaArray->toString());
 
+    std::unique_ptr<potato::baseARMAVariable> armaArray3 = std::make_unique<potato::armaArray>();
+    armaArray3->set(dataPtr, potato::variableType::ARRAY, armaArray->getDataPointerSize());
+
     spdlog::info("array: {}", armaArray->toString());
     spdlog::info("array: {}", armaArray2->toString());
+    spdlog::info("array: {}", armaArray3->toString());
 
     while(true) {}
 

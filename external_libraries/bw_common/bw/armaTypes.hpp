@@ -108,41 +108,9 @@ namespace potato {
             return true;
         }
 
-        // set the internal data to whatever
+        // set the internal data to pointed data
         // this isn't templated to allow setting memory buffers to the internal data
-        bool set(void *data, variableType desiredType) {
-            if (desiredType != type) {
-                return false;
-            }
-            switch (type) {
-                case variableType::UNKNOWN:
-                    break;
-                case variableType::NUMBER: {
-                        double *dataDouble = reinterpret_cast<double*>(dataPtr);
-                        *dataDouble = *static_cast<double*>(data);
-                    }
-                    break;
-                case variableType::STRING: {
-                        std::string *dataString = reinterpret_cast<std::string*>(dataPtr);
-                        *dataString = *static_cast<std::string*>(data);
-                    }
-                    break;
-                case variableType::BOOLEAN: {
-                        bool *dataBool = reinterpret_cast<bool*>(dataPtr);
-                        *dataBool = *static_cast<bool*>(data);
-                    }
-                    break;
-                case variableType::ARRAY: {
-                        std::vector<std::unique_ptr<baseARMAVariable>> *dataArray = reinterpret_cast<std::vector<std::unique_ptr<baseARMAVariable>>*>(dataPtr);
-                        //*dataArray = *static_cast<std::vector<std::unique_ptr<baseARMAVariable>>*>(data);
-                    }
-                    break;
-                default:
-                    return false;
-                    break;
-            }
-            return true;
-        }
+        bool set(void *data, variableType desiredType, std::size_t expectedSize);
 
         protected:
             void *dataPtr = nullptr;
@@ -212,6 +180,7 @@ namespace potato {
 	template <>
 	struct armaVariable<variableType::ARRAY> : baseARMAVariable {
 		std::vector<std::unique_ptr<baseARMAVariable>> data = {};
+        std::vector<std::uint8_t> dataBuffer = {};
 
 		std::string toString() const override final {
             std::string formattedString = "[";
@@ -266,6 +235,8 @@ namespace potato {
                         pushData(arrayStack.top()->data, dataString);
                     }
                     dataString = "";
+
+                    arrayStack.top()->toDataBuffer();
                     arrayStack.pop();
                 } else {
                     if (inStringType) {
@@ -291,8 +262,53 @@ namespace potato {
             }
         }
 
-        void *getDataPointer() const override final { return nullptr; }
-        std::intptr_t getDataPointerSize() const override final { return 0; }
+        // copy internal variables to a byte array
+        void toDataBuffer() {
+            std::size_t variableCount = data.size();
+            std::uint8_t *variableCountPtr = reinterpret_cast<std::uint8_t*>(&variableCount);
+
+            dataBuffer.clear();
+            dataBuffer.insert(dataBuffer.begin(), variableCountPtr, variableCountPtr + sizeof(variableCount));
+
+            for (auto &variable : data) {
+                std::uint8_t *dataPtr = reinterpret_cast<std::uint8_t*>(variable->getDataPointer());
+                std::intptr_t dataPtrSize = variable->getDataPointerSize();
+                variableType dataType = variable->type;
+
+                std::uint8_t metaData[sizeof(dataPtrSize) + sizeof(dataType)] = {};
+                std::memcpy(metaData, &dataPtrSize, sizeof(dataPtrSize));
+                std::memcpy(metaData + sizeof(dataPtrSize), &dataType, sizeof(dataType));
+
+                dataBuffer.insert(dataBuffer.end(), std::begin(metaData), std::end(metaData));
+                dataBuffer.insert(dataBuffer.end(), dataPtr, dataPtr + variable->getDataPointerSize());
+            }
+        }
+
+        // copy byte array to vector of arma types
+        void fromDataBuffer() {
+            data.clear();
+
+            const std::uint8_t *dataPtr = dataBuffer.data();
+            std::size_t variableCount = *reinterpret_cast<const std::size_t*>(dataPtr);
+
+            std::uintptr_t offset = sizeof(std::size_t);
+
+            for (std::size_t i = 0; i < variableCount; i++) {
+                std::intptr_t dataSize = *reinterpret_cast<const std::intptr_t*>(dataPtr + offset);
+                offset += sizeof(dataSize);
+
+                variableType dataType = *reinterpret_cast<const variableType*>(dataPtr + offset);
+                offset += sizeof(dataType);
+
+                data.emplace_back(getARMAVariableFromType(dataType));
+                data.back()->set(const_cast<std::uint8_t*>(dataPtr + offset), dataType, dataSize);
+
+                offset += dataSize;
+            }
+        }
+
+        void *getDataPointer() const override final { return const_cast<std::uint8_t*>(dataBuffer.data()); }
+        std::intptr_t getDataPointerSize() const override final { return dataBuffer.size(); }
 
         armaVariable() {
             dataPtr = &data;
@@ -313,5 +329,44 @@ namespace potato {
         RETURN_APPLICABLE_TYPE(variableType::ARRAY);
 
         #undef RETURN_APPLICABLE_TYPE
+    }
+
+    bool baseARMAVariable::set(void *data, variableType desiredType, std::size_t expectedSize) {
+        if (desiredType != type) {
+            return false;
+        }
+        switch (type) {
+            case variableType::UNKNOWN:
+                break;
+            case variableType::NUMBER: {
+                double *dataDouble = reinterpret_cast<double*>(dataPtr);
+                *dataDouble = *static_cast<double*>(data);
+            }
+                                     break;
+            case variableType::STRING: {
+                // this doesn't work. We need to set the internal string buffer to the data
+                //std::string *dataString = reinterpret_cast<std::string*>(dataPtr);
+                //*dataString = *static_cast<std::string*>(data);
+            }
+                                     break;
+            case variableType::BOOLEAN: {
+                bool *dataBool = reinterpret_cast<bool *>(dataPtr);
+                *dataBool = *static_cast<bool*>(data);
+            }
+                                      break;
+            case variableType::ARRAY: {
+                armaArray *thisArray = static_cast<armaArray*>(this);
+                std::uint8_t *dataBytePtr = static_cast<std::uint8_t*>(data);
+                for (int i = 0; i < expectedSize; i++) {
+                    thisArray->dataBuffer.push_back(dataBytePtr[i]);
+                }
+                thisArray->fromDataBuffer();
+            }
+            break;
+            default:
+                return false;
+                break;
+        }
+        return true;
     }
 }
