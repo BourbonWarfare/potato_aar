@@ -6,6 +6,7 @@
 namespace potato {
 	enum class packetTypes : uint16_t {
 		DEBUG_MESSAGE = 1,
+		UNIT_STATE_UPDATE,
 		COUNT,
 		NONE = 0,
 	};

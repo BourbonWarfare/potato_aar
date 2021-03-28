@@ -10,3 +10,4 @@
 #endif
 
 #include "\z\potato_aar\arma\addons\main\script_macros.hpp"
+#include "\z\potato_aar\arma\addons\main\packetTypes.hpp"
