@@ -22,6 +22,32 @@ if !(_overrun) then {
 		} else {
 			_unit call BIS_fnc_netId;
 		};
+
+		/*
+			[player1] : {
+				[1] : {}
+				[2] : {}
+				[3] : {}
+			}
+			[player2] : {
+				[1] : {}
+				[2] : {}
+				[3] : {}
+			}
+			[bullet] : {
+				[10] : {}
+			}
+
+			[0] : {
+				// bullet data
+			}
+			[10]
+
+			{
+				"bullet created" -> 0,
+				"player created" -> 10
+			}
+		*/
 		
 		_unitData pushBack [_uid, getPosASL _unit, getDir _unit];
 	};

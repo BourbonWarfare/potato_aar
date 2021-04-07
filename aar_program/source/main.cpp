@@ -15,7 +15,8 @@ int main() {
     dataServer server;
     server.subscribe(potato::packetTypes::DEBUG_MESSAGE, logPacket);
 
-    while (true) {}
+    while (true) {
+    }
 
     return 0;
 }
