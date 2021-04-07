@@ -1,12 +1,21 @@
 // armaEvents.hpp
-// Enum of all events that can be sent from ARMA
+// A struct that represents an event that occured in game
 #pragma once
 #include <string_view>
+#include <vector>
+#include <memory>
+#include "bw/armaTypes.hpp"
 
 enum class armaEvents {
 	NONE = 0,
 	OBJECT_CREATED = 1,
 	OBJECT_KILLED = 2,
+};
+
+struct eventData {
+	armaEvents type = armaEvents::NONE;
+	double eventTime = 0.0;
+	std::vector<std::unique_ptr<potato::baseARMAVariable>> eventInformation;
 };
 
 namespace potato {

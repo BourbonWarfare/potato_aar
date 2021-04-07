@@ -344,6 +344,12 @@ namespace potato {
         #undef RETURN_APPLICABLE_TYPE
     }
 
+    inline std::unique_ptr<baseARMAVariable> copyARMAVariable(baseARMAVariable *base) {
+        std::unique_ptr<baseARMAVariable> toReturn = getARMAVariableFromType(base->type);
+        toReturn->set(base->getDataPointer(), base->type, base->getDataPointerSize());
+        return toReturn;
+    }
+
     inline bool baseARMAVariable::set(void *data, variableType desiredType, std::size_t expectedSize) {
         if (desiredType != type) {
             return false;

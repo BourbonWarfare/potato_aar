@@ -4,6 +4,7 @@
 #include <vector>
 #include <queue>
 #include <memory>
+#include <ostream>
 #include "armaEvents.hpp"
 
 namespace potato {
@@ -13,9 +14,10 @@ namespace potato {
 class dataServer;
 class eventProcessor {
 	private:
-		std::queue<armaEvents> m_events;
+		std::queue<eventData> m_events;
 		void readPacket(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
 
 	public:
 		eventProcessor(dataServer &server);
+		void outputData(std::ostream &out);
 };
