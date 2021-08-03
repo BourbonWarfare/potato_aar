@@ -26,6 +26,7 @@ void dataServer::handleMessages() {
                 potato::packetHeader header = *reinterpret_cast<potato::packetHeader*>(receiveBuffer.data() + offset);
                 offset += potato::packetHeader::c_headerSizeBytes;
 
+                unsigned int maxSize = receiveBuffer.size() - offset;
                 std::uint8_t *data = receiveBuffer.data() + offset;
 
                 // Process sub-packet within major-packet
@@ -39,13 +40,18 @@ void dataServer::handleMessages() {
                     // get binary data of object
                     std::vector<std::uint8_t> dataBuffer = {};
 
+                    if (maxSize <= i || maxSize <= i + sizeOfType)
+                        {
+                            throw std::runtime_error(fmt::format("Packet size exceeds data input! maxSize: {} i: {} sizeOfType: {} type: {}", maxSize, i, sizeOfType, potato::getTypeString(type)));
+                        }
+
                     for (int j = 0; j < sizeOfType; j++) {
                         dataBuffer.push_back(data[i + j]);
                     }
                     i += sizeOfType;
 
                     if (!dataBuffer.empty()) {
-                        variablesInPacket.push_back(std::move(getARMAVariableFromType(type)));
+                        variablesInPacket.push_back(std::move(potato::getARMAVariableFromType(type)));
                         // security risk, but this is LAN so it doesn't matter
                         // if this program isn't LAN anymore and this still exists, uh oh you have a security hole.
                         // The `set` function blindly sets the pointer to whatever type `type` is, so if a false packet comes through it could overrun the buffer and have access to program memory

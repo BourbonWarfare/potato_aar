@@ -18,9 +18,9 @@ void eventProcessor::readPacket(const std::vector<std::unique_ptr<potato::baseAR
 
     data.eventInformation = std::move(array->data);
 
-    m_events.push(std::move(data));
-
     spdlog::info("Event: {}", potato::getEventString(data.type));
+
+    m_events.push(std::move(data));
 }
 
 eventProcessor::eventProcessor(dataServer &server) {
