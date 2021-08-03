@@ -1,4 +1,10 @@
 #include "script_component.hpp"
 
-[LINKFUNC(captureUnitData), 0, [CBA_missionTime, allUnits, 0, [UNIT_STATE_UPDATE, 0]]] call CBA_fnc_addPerFrameHandler;
+GVAR(projectileID) = 0;
+GVAR(trackingProjectiles) = [];
+
+["CAManBase", "fired", LINKFUNC(fired)] call CBA_fnc_addClassEventHandler;
+[LINKFUNC(trackProjectiles), 0.1] call CBA_fnc_addPerFrameHandler;
+
+
 
