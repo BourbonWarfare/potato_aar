@@ -7,7 +7,7 @@ GVAR(trackingProjectiles) = [];
 [LINKFUNC(trackProjectiles), 0.1] call CBA_fnc_addPerFrameHandler;
 
 GVAR(trackingObjects) = [];
-["CAManBase", "init", LINKFUNC(objectCreated), true, [], true] call CBA_fnc_addClassEventHandler;
+["AllVehicles", "init", LINKFUNC(objectCreated), true, [], true] call CBA_fnc_addClassEventHandler;
 addMissionEventHandler ["EntityKilled", LINKFUNC(objectKilled)];
 [LINKFUNC(trackObjects), 1] call CBA_fnc_addPerFrameHandler;
 

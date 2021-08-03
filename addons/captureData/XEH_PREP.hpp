@@ -1,12 +1,13 @@
 TRACE_1("",QUOTE(ADDON));
 
-PREP(captureUnitData);
-
 PREP(getObjectUID);
 
 PREP(objectCreated);
 PREP(objectKilled);
 PREP(trackObjects);
+
+PREP(getIn);
+PREP(getOut);
 
 PREP(fired);
 PREP(trackProjectiles);

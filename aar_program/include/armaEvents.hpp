@@ -14,6 +14,8 @@ enum class armaEvents {
     MARKER_CREATED      = 4,
     MARKER_DESTROYED    = 5,
     MARKER_UPDATED      = 6,
+    OBJECT_GET_IN       = 7,
+    OBJECT_GET_OUT      = 8
 };
 
 struct eventData {
@@ -39,6 +41,10 @@ namespace potato {
                 return "Marker Destroyed";
             case armaEvents::MARKER_UPDATED:
                 return "Marker Updated";
+            case armaEvents::OBJECT_GET_IN:
+                return "Object Get In";
+            case armaEvents::OBJECT_GET_OUT:
+                return "Object Get Out";
 			default:
 				return "unknown";
 		}

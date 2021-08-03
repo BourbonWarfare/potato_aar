@@ -8,6 +8,12 @@
  */
 params ["_object"];
 
+// add event handlers for getting in/out of vehicles
+if (_object isKindOf "CAManBase") then {
+    _object addEventHandler ["GetInMan", LINKFUNC(getIn)];
+    _object addEventHandler ["GetOutMan", LINKFUNC(getOut)];
+};
+
 private _eventData = [
     EVENT_OBJECT_CREATED,
     CBA_missionTime,
