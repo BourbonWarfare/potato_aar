@@ -7,7 +7,7 @@ class CfgPatches {
         requiredVersion = REQUIRED_VERSION;
         requiredAddons[] = {"ACE_COMMON"};
         author = "Bourbon Warfare";
-        authorUrl = "https://github.com/BourbonWarfare/POTATO"; // todo: change
+        authorUrl = "https://github.com/BourbonWarfare/potato_aar"; // todo: change
         VERSION_CONFIG;
     };
 };
@@ -20,7 +20,7 @@ class CfgMods {
         hidePicture = "false";
         hideName = "false";
         actionName = "Website";
-        action = "https://github.com/BourbonWarfare/POTATO"; // todo: change
+        action = "https://github.com/BourbonWarfare/potato_aar"; // todo: change
         description = "";
     };
 };

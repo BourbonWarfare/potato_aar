@@ -1,0 +1,2 @@
+#define DEBUG_MESSAGE 1
+#define UNIT_STATE_UPDATE 2
