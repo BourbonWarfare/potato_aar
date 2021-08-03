@@ -30,7 +30,7 @@ namespace potato {
 			case armaEvents::OBJECT_CREATED:
 				return "Object Created";
 			case armaEvents::OBJECT_KILLED:
-				return "Object Created";
+				return "Object Killed";
             case armaEvents::FIRED:
                 return "Fired";
             case armaEvents::MARKER_CREATED:
