@@ -125,6 +125,8 @@ namespace potato {
         // this isn't templated to allow setting memory buffers to the internal data
         bool set(void *data, variableType desiredType, std::size_t expectedSize);
 
+        virtual std::unique_ptr<baseARMAVariable> copy() const = 0;
+
         protected:
             void *dataPtr = nullptr;
 	};
@@ -134,6 +136,7 @@ namespace potato {
 		std::string toString() const override final { return "unknown"; }
         void fromString(std::string_view str) override final {}
         std::intptr_t getDataPointerSize() const override final { return 0; }
+        std::unique_ptr<baseARMAVariable> copy() const override final { return std::make_unique<armaVariable<t_type>>(); }
     };
 
     using armaNumber = armaVariable<variableType::NUMBER>;
@@ -150,6 +153,12 @@ namespace potato {
         }
 
         std::intptr_t getDataPointerSize() const override final { return sizeof(data); }
+
+        std::unique_ptr<baseARMAVariable> copy() const override final {
+            std::unique_ptr<armaVariable<variableType::NUMBER>> copy = std::make_unique<armaVariable<variableType::NUMBER>>();
+            copy->data = data;
+            return copy;
+        }
 
 		armaVariable() {
 			dataPtr = &data;
@@ -168,6 +177,12 @@ namespace potato {
         void *getDataPointer() const override final { return const_cast<char*>(data.c_str()); }
         std::intptr_t getDataPointerSize() const override final { return data.size(); }
 
+        std::unique_ptr<baseARMAVariable> copy() const override final {
+            std::unique_ptr<armaVariable<variableType::STRING>> copy = std::make_unique<armaVariable<variableType::STRING>>();
+            copy->data = data;
+            return copy;
+        }
+
         armaVariable() {
             dataPtr = &data;
             *const_cast<variableType*>(&type) = variableType::STRING;
@@ -183,6 +198,12 @@ namespace potato {
         }
 
         std::intptr_t getDataPointerSize() const override final { return sizeof(data); }
+
+        std::unique_ptr<baseARMAVariable> copy() const override final {
+            std::unique_ptr<armaVariable<variableType::BOOLEAN>> copy = std::make_unique<armaVariable<variableType::BOOLEAN>>();
+            copy->data = data;
+            return copy;
+        }
 
         armaVariable() {
             dataPtr = &data;
@@ -322,6 +343,15 @@ namespace potato {
 
         void *getDataPointer() const override final { return const_cast<std::uint8_t*>(dataBuffer.data()); }
         std::intptr_t getDataPointerSize() const override final { return dataBuffer.size(); }
+
+        std::unique_ptr<baseARMAVariable> copy() const override final {
+            std::unique_ptr<armaVariable<variableType::ARRAY>> copy = std::make_unique<armaVariable<variableType::ARRAY>>();
+            for (const auto &variable : data)
+                {
+                    copy->data.push_back(std::move(variable->copy()));
+                }
+            return copy;
+        }
 
         armaVariable() {
             dataPtr = &data;
