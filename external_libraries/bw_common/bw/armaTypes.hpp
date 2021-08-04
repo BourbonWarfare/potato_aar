@@ -235,7 +235,6 @@ namespace potato {
         void fromString(std::string_view str) override final {
             int currentIndex = 1; // we know the first index is '['
             std::string dataString = "";
-            bool inStringType = false;
 
             std::stack<armaArray*> arrayStack;
             arrayStack.push(this);
@@ -250,51 +249,99 @@ namespace potato {
                 dataVector.push_back(std::move(armaVariable));
             };
 
-            // parse array string. We have two states, we are either processing a string or we aren't.
-            // If we aren't parsing a string, we read the values until we find a comma and then push it to the data vector
-            // If we find the start of a new array, we push a new array onto the data vector
-            // If we parse a string, we can't exit on a comma until we exit the string, so we process until we find an end quote
-            while (!arrayStack.empty()) {
+
+            std::stack<variableType> variableStack;
+            variableStack.push(variableType::ARRAY);
+
+            // parse array string. Two main states: Reading for data and searching
+            // Reading for data has sub states depending on current variable type
+            while (!arrayStack.empty() && !variableStack.empty()) {
                 if (currentIndex >= str.size()) {
                     throw std::exception("Overran string when creating array type");
                 }
 
-                if (str[currentIndex] == '[') {
-                    dataString = "";
-
-                    data.emplace_back(std::make_unique<armaVariable<variableType::ARRAY>>());
-                    arrayStack.push(static_cast<armaVariable<variableType::ARRAY>*>(data.back().get()));
-                } else if (str[currentIndex] == ']') {
+                char workingChar = str[currentIndex++];
+                while (workingChar == ']') {
+                    // push whatever we have immediately and then process the array
                     if (dataString != "") {
                         pushData(arrayStack.top()->data, dataString);
                     }
                     dataString = "";
+                    variableStack.pop();
 
                     arrayStack.top()->toDataBuffer();
                     arrayStack.pop();
-                } else {
-                    if (inStringType) {
-                        if (str[currentIndex] == '"') {
-                            inStringType = false;
-                        }
-                        dataString += str[currentIndex];
-                    }
-                    else {
-                        if (str[currentIndex] == ',') {
-                            if (dataString != "") {
-                                pushData(arrayStack.top()->data, dataString);
-                            }
-                            dataString = "";
-                        } else if (str[currentIndex] != ' ') {
-                            dataString += str[currentIndex];
-                        }
 
-                        if (str[currentIndex] == '"') {
-                            inStringType = true;
-                        }
+                    if (arrayStack.empty()) {
+                        break;
                     }
+                    workingChar = str[currentIndex++];
                 }
-                currentIndex++;
+                if (arrayStack.empty()) {
+                    break;
+                }
+                variableType topType = variableStack.top();
+
+                switch (topType) {
+                    case potato::variableType::UNKNOWN:
+                        break;
+                    case potato::variableType::STRING:
+                        dataString += workingChar;
+                        if (workingChar == '"') {
+                            // get past the comma
+                            currentIndex++;
+
+                            pushData(arrayStack.top()->data, dataString);
+                            dataString = "";
+                            variableStack.pop();
+                        }
+                        break;
+                    case potato::variableType::NUMBER:
+                        if (std::isdigit(workingChar) || workingChar == '.') {
+                            dataString += workingChar;
+                        } else {
+                            pushData(arrayStack.top()->data, dataString);
+                            dataString = "";
+                            variableStack.pop();
+                        }
+                        break;
+                    case potato::variableType::BOOLEAN:
+                        if (workingChar == ',') {
+                            pushData(arrayStack.top()->data, dataString);
+                            dataString = "";
+                            variableStack.pop();
+                        } else {
+                            dataString += workingChar;
+                        }
+                        break;
+                    case potato::variableType::ARRAY:
+                        if (!std::isspace(workingChar) && workingChar != ',') {
+                            if (workingChar != '[') {
+                                dataString += workingChar;
+                            }
+
+                            switch (workingChar) {
+                                case 't':
+                                case 'f':
+                                    variableStack.push(variableType::BOOLEAN);
+                                    break;
+                                case '"':
+                                    variableStack.push(variableType::STRING);
+                                    break;
+                                case '[':
+                                    arrayStack.top()->data.emplace_back(std::make_unique<armaArray>());
+                                    arrayStack.push(static_cast<armaArray *>(arrayStack.top()->data.back().get()));
+                                    variableStack.push(variableType::ARRAY);
+                                    break;
+                                default:
+                                    variableStack.push(variableType::NUMBER);
+                                    break;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
