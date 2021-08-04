@@ -9,6 +9,7 @@
 #include <memory>
 #include <charconv>
 #include <stack>
+#include <assert.h>
 
 namespace potato {
     // The variable types we support coming from ARMA
@@ -233,6 +234,20 @@ namespace potato {
         }
 
         void fromString(std::string_view str) override final {
+            // make sure braces match
+#ifdef _DEBUG
+            int braceCounter = 0;
+            for (auto c : str) {
+                if (c == '[') {
+                    braceCounter++;
+                } else if (c == ']') {
+                    braceCounter--;
+                }
+            }
+
+            assert(braceCounter == 0);
+#endif
+
             int currentIndex = 1; // we know the first index is '['
             std::string dataString = "";
 
@@ -288,9 +303,6 @@ namespace potato {
                     case potato::variableType::STRING:
                         dataString += workingChar;
                         if (workingChar == '"') {
-                            // get past the comma
-                            currentIndex++;
-
                             pushData(arrayStack.top()->data, dataString);
                             dataString = "";
                             variableStack.pop();

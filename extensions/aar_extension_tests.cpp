@@ -49,8 +49,13 @@ int main() {
 
     spdlog::info("array: {}\n", simpleFrom->toString());
 
+    std::unique_ptr<potato::baseARMAVariable> complexNested = std::make_unique<potato::armaArray>();
+    complexNested->fromString("[[\"baz\"]]");
+
+    spdlog::info("array: {}\n", complexNested->toString());
+
     std::unique_ptr<potato::baseARMAVariable> armaArray = std::make_unique<potato::armaArray>();
-    armaArray->fromString("[\"a\",1,true,false,[1,\"b\",false],2,[\"foo\"],\"bar\",true,[1, 2, [3, 4, [[5, 6], [7, 8]]]],3]]");
+    armaArray->fromString("[\"a\", 1, true, false, [1, \"b\", false], 2, [\"foo\"], \"bar\", true, [1, 2, [3, 4, [[5, 6], [7, 8]]]],3]");
     void *dataPtr = armaArray->getDataPointer();
 
     std::unique_ptr<potato::baseARMAVariable> armaArray2 = std::make_unique<potato::armaArray>();
