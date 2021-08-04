@@ -87,6 +87,12 @@ namespace potato {
                 return "Object Get In";
             case armaEvents::OBJECT_GET_OUT:
                 return "Object Get Out";
+            case armaEvents::CUSTOM:
+                return "Custom";
+            case armaEvents::MISSION_LOAD:
+                return "Mission Load";
+            case armaEvents::MISSION_END:
+                return "Mission End";
 			default:
 				return "unknown";
 		}

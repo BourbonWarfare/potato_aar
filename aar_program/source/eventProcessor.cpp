@@ -43,10 +43,11 @@ nlohmann::json eventProcessor::serialise() const {
 
         std::vector<std::string> variables;
         for (auto &variable : event.eventInformation) {
-            variables.emplace_back(variable->toString());
+            variables.push_back(variable->toString());
         }
 
         jsonEvent["arguments"] = variables;
+
         events.push_back(jsonEvent);
     }
 

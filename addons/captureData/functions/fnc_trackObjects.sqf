@@ -18,5 +18,5 @@ private _packets = [];
 } forEach GVAR(trackingObjects);
 
 if (_packets isNotEqualTo []) then {
-    private _result = "potato_aar_extension" callExtension ["processData", [UPDATE_OBJECT, nil, _packets]];
+    private _result = "potato_aar_extension" callExtension ["processData", [UPDATE_OBJECT, nil, [CBA_missionTime, _packets]]];
 };

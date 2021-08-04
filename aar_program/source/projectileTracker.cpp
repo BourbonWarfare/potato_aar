@@ -146,14 +146,17 @@ nlohmann::json projectileTracker::serialise() const {
             nlohmann::json updateJSON;
 
             updateJSON["time"] = update.m_time;
+            updateJSON["position"] = {
+                update.m_positionX,
+                update.m_positionY,
+                update.m_positionZ
+            };
 
-            updateJSON["x"] = update.m_positionX;
-            updateJSON["y"] = update.m_positionY;
-            updateJSON["z"] = update.m_positionZ;
-
-            updateJSON["velocityX"] = update.m_velocityX;
-            updateJSON["velocityY"] = update.m_velocityY;
-            updateJSON["velocityZ"] = update.m_velocityZ;
+            updateJSON["velocity"] = {
+                update.m_velocityX,
+                update.m_velocityY,
+                update.m_velocityZ
+            };
 
             updateData.push_back(updateJSON);
         }

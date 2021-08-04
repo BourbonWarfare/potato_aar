@@ -32,9 +32,7 @@ void missionHandler::dumpToDisk() {
     out << m_eventHandler.serialise().dump(4);
     out.close();
 
-    out.open(fmt::format("{}/objects.json", directory));
-    out << m_objectHandler.serialise().dump(4);
-    out.close();
+    m_objectHandler.serialise(directory);
 
     out.open(fmt::format("{}/projectiles.json", directory));
     out << m_projectileHandler.serialise().dump(4);
