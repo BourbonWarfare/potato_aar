@@ -28,6 +28,7 @@ class projectileTracker{
             float m_vectorDirZ = 0.f;
         };
 
+        std::unordered_map<unsigned int, unsigned int> m_activeProjectiles;
         std::unordered_map<unsigned int, std::deque<projectile>> m_projectiles;
 
         // look out for projectile created events
@@ -36,8 +37,15 @@ class projectileTracker{
 
         void drawProjectileInfo(const projectile &projectile) const;
 
+        static constexpr unsigned int m_tickRecycleTime = 5;
+
+        bool m_hasUpdate = false;
+        unsigned int m_tick = 0;
+
     public:
         projectileTracker(dataServer &server);
         void drawInfo();
+
+        void update();
 };
 

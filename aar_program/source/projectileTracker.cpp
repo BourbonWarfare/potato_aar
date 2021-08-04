@@ -3,11 +3,12 @@
 #include "armaEvents.hpp"
 #include "imgui.h"
 #include "spdlog/fmt/fmt.h"
+#include <stack>
 
 void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
     eventData event(variables);
     if (event.type == armaEvents::FIRED) {
-        double uid = -1;
+        unsigned int uid = -1;
 
         projectile newProjectile;
         event.eventInformation[0]->convert(uid);
@@ -30,7 +31,9 @@ void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseA
         up.data[2]->convert(newProjectile.m_vectorUpZ);
 
         event.eventInformation[4]->convert(newProjectile.m_classname);
-        m_projectiles[static_cast<unsigned int>(uid)].push_back(newProjectile);
+        m_projectiles[uid].push_back(newProjectile);
+
+        m_activeProjectiles[uid] = m_tick;
     }
 }
 
@@ -66,8 +69,10 @@ void projectileTracker::updateProjectile(const std::vector<std::unique_ptr<potat
             up.data[2]->convert(updatedProjectile.m_vectorUpZ);
 
             m_projectiles.at(realUID).push_back(updatedProjectile);
+            m_activeProjectiles[uid] = m_tick;
         }
     }
+    m_hasUpdate = true;
 }
 
 void projectileTracker::drawProjectileInfo(const projectile &projectile) const {
@@ -98,6 +103,15 @@ void projectileTracker::drawInfo() {
             }
 
             if (ImGui::BeginTabItem("Active Projectiles")) {
+                ImGui::Text("Current Tick: %d", m_tick);
+                for (auto &active : m_activeProjectiles) {
+                    projectile projectile = m_projectiles.at(active.first).back();
+                    if (ImGui::TreeNode(reinterpret_cast<void*>(active.first), projectile.m_classname.c_str())) {
+                        ImGui::Text("Last Tick Updated: %d", active.second);
+                        drawProjectileInfo(projectile);
+                        ImGui::TreePop();
+                    }
+                }
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -105,3 +119,23 @@ void projectileTracker::drawInfo() {
         ImGui::EndTabItem();
     }
 }
+
+void projectileTracker::update()
+    {
+        if (m_hasUpdate) {
+            m_hasUpdate = false;
+            m_tick++;
+        }
+
+        std::stack<unsigned int> toRemove;
+        for (auto &projectile : m_activeProjectiles) {
+            if (m_tick >= projectile.second + m_tickRecycleTime) {
+                toRemove.push(projectile.first);
+            }
+        }
+
+        while (!toRemove.empty()) {
+            m_activeProjectiles.erase(toRemove.top());
+            toRemove.pop();
+        }
+    }
