@@ -118,7 +118,19 @@ namespace potato {
             if (type != getVariableType<T>()) {
                 return false;
             }
-            output = *static_cast<T*>(dataPtr);
+
+            if constexpr (getVariableType<T>() == potato::variableType::BOOLEAN) {
+                output = static_cast<T>(*static_cast<bool *>(dataPtr));
+            }
+
+            if constexpr (getVariableType<T>() == potato::variableType::NUMBER) {
+                output = static_cast<T>(*static_cast<double *>(dataPtr));
+            }
+
+            if constexpr (getVariableType<T>() == potato::variableType::STRING) {
+                output = static_cast<T>(*static_cast<std::string *>(dataPtr));
+            }
+
             return true;
         }
 

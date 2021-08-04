@@ -9,8 +9,8 @@
 params ["", "_weapon", "", "", "_ammo", "_magazine", "_projectile"];
 
 private _eventData = [EVENT_FIRED, CBA_missionTime, [GVAR(projectileID), getPosASLVisual _projectile, vectorUpVisual _projectile, vectorDirVisual _projectile, _ammo, _magazine, _weapon]];
-GVAR(projectileID) = GVAR(projectileID) + 1;
-
 GVAR(trackingProjectiles) pushBack [_projectile, GVAR(projectileID)];
+
+GVAR(projectileID) = GVAR(projectileID) + 1;
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, _eventData]];
 

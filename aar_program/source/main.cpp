@@ -3,6 +3,7 @@
 #include "spdlog/spdlog.h"
 
 #include "eventProcessor.hpp"
+#include "projectileTracker.hpp"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -24,6 +25,7 @@ int main() {
     server.subscribe(potato::packetTypes::DEBUG_MESSAGE, logPacket);
 
     eventProcessor eventHandler(server);
+    projectileTracker projectileHandler(server);
 
     glfwInit();
 
@@ -48,11 +50,15 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         if (ImGui::Begin("Server Overview", false, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
-            ImGui::SetWindowSize({ 640, 480 });
+            int width, height;
+            glfwGetWindowSize(app, &width, &height);
+
+            ImGui::SetWindowSize({ static_cast<float>(width), static_cast<float>(height) });
             ImGui::SetWindowPos({ 0, 0 });
 
             if (ImGui::BeginTabBar("##ViewTabs")) {
                 eventHandler.drawInfo();
+                projectileHandler.drawInfo();
                 ImGui::EndTabBar();
             }
         }

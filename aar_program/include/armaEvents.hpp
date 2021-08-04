@@ -28,6 +28,10 @@ struct eventData {
         *this = rhs;
     }
 
+    eventData(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
+        fromPacket(variables);
+    }
+
     eventData &operator=(const eventData &rhs) {
         if (&rhs != this) {
             this->type = rhs.type;
@@ -38,6 +42,22 @@ struct eventData {
         }
 
         return *this;
+    }
+
+    void fromPacket(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
+        potato::armaArray &eventMetaInfo = *static_cast<potato::armaArray *>(variables[0].get());
+
+        double eventNumber = 0;
+        eventMetaInfo.data[0]->convert(eventNumber);
+        eventMetaInfo.data[1]->convert(eventTime);
+
+        type = static_cast<armaEvents>(eventNumber);
+
+        potato::armaArray &eventInfo = *static_cast<potato::armaArray *>(eventMetaInfo.data[2].get());
+
+        for (auto &variable : eventInfo.data) {
+            eventInformation.push_back(variable->copy());
+        }
     }
 };
 

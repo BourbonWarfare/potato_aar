@@ -28,6 +28,6 @@ private _packets = [];
 } forEach GVAR(trackingProjectiles);
 
 if (_packets isNotEqualTo []) then {
-    //private _result = "potato_aar_extension" callExtension ["processData", [UPDATE_PROJECTILE, nil, _packets]];
+    private _result = "potato_aar_extension" callExtension ["processData", [UPDATE_PROJECTILE, nil, _packets]];
 };
 
