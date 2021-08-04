@@ -58,8 +58,10 @@ struct eventData {
 
         potato::armaArray &eventInfo = *static_cast<potato::armaArray *>(eventMetaInfo.data[2].get());
 
-        for (auto &variable : eventInfo.data) {
-            eventInformation.push_back(variable->copy());
+        if (eventInfo.type == potato::variableType::ARRAY) {
+            for (auto &variable : eventInfo.data) {
+                eventInformation.push_back(variable->copy());
+            }
         }
     }
 };
