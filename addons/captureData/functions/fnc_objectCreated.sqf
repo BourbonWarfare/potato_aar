@@ -8,10 +8,13 @@
  */
 params ["_object"];
 
+private _name = "";
+
 // add event handlers for getting in/out of vehicles
 if (_object isKindOf "CAManBase") then {
     _object addEventHandler ["GetInMan", LINKFUNC(getIn)];
     _object addEventHandler ["GetOutMan", LINKFUNC(getOut)];
+    _name = name _object;
 };
 
 private _eventData = [
@@ -19,7 +22,9 @@ private _eventData = [
     CBA_missionTime,
     [
         [_object] call FUNC(getObjectUID),
-        getPosASLVisual _object
+        typeOf _object,
+        getPosASLVisual _object,
+        _name
     ]
 ];
 

@@ -44,7 +44,7 @@ class projectileTracker{
 
     public:
         projectileTracker(dataServer &server);
-        void drawInfo();
+        void drawInfo() const;
 
         void update();
 };

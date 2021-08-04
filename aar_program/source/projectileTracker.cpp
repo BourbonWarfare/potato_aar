@@ -87,7 +87,7 @@ projectileTracker::projectileTracker(dataServer &server) {
     server.subscribe(potato::packetTypes::UPDATE_PROJECTILE, std::bind(&projectileTracker::updateProjectile, this, std::placeholders::_1));
 }
 
-void projectileTracker::drawInfo() {
+void projectileTracker::drawInfo() const {
     if (ImGui::BeginTabItem("Projectile Tracking")) {
         if (ImGui::BeginTabBar("##ProjectileTabs")) {
             if (ImGui::BeginTabItem("All Projectiles")) {

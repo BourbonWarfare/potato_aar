@@ -4,6 +4,7 @@
 
 #include "eventProcessor.hpp"
 #include "projectileTracker.hpp"
+#include "objectTracker.hpp"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -26,6 +27,7 @@ int main() {
 
     eventProcessor eventHandler(server);
     projectileTracker projectileHandler(server);
+    objectTracker objectHandler(server);
 
     glfwInit();
 
@@ -61,6 +63,7 @@ int main() {
             if (ImGui::BeginTabBar("##ViewTabs")) {
                 eventHandler.drawInfo();
                 projectileHandler.drawInfo();
+                objectHandler.drawInfo();
                 ImGui::EndTabBar();
             }
         }

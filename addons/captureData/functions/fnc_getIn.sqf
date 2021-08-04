@@ -13,7 +13,7 @@ private _eventData = [
     CBA_missionTime,
     [
         [_unit] call FUNC(getObjectUID),
-        [_vehicle] call FUNC(getObjectUID),
+        [vehicle _vehicle] call FUNC(getObjectUID),
         _role
     ]
 ];

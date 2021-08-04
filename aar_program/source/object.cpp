@@ -1,46 +1,33 @@
 #include "object.hpp"
 
-object::object(std::string classname, std::string id) : 
+object::object(std::string classname, std::string id, std::string name) : 
     m_objectClassname(classname),
-    m_objectID(id) {}
+    m_objectID(id),
+    m_name(name)
+{}
 
-void object::moveIn(object *obj) {
-    m_objectsWithin.insert(obj);
+void object::moveIn(std::string objectUID) {
+    m_objectsWithin.insert(objectUID);
 }
 
-void object::moveOut(object *obj) {
-    m_objectsWithin.extract(obj);
-}
-
-void object::setPosition(float x, float y, float z) {
-    m_positionX = x;
-    m_positionY = y;
-    m_positionZ = z;
-}
-
-void object::setAzimuthPitch(float azimuth, float pitch) {
-    m_azimuth = azimuth;
-    m_pitch = pitch;
+void object::moveOut(std::string objectUID) {
+    m_objectsWithin.extract(objectUID);
 }
 
 void object::setLifeState(object::lifeState state) {
     m_lifeState = state;
 }
 
-void object::enter(object *obj) {
-    m_withinObject = obj;
-    obj->moveIn(this);
+void object::enter(std::string object) {
+    m_withinObject = object;
 }
 
 void object::exit() {
-    if (m_withinObject) {
-        m_withinObject->moveOut(this);
-    }
-    m_withinObject = nullptr;
+    m_withinObject = "";
 }
 
 bool object::insideObject() const {
-    return m_withinObject;
+    return m_withinObject != "";
 }
 
 std::string object::getClassname() const {
@@ -49,4 +36,16 @@ std::string object::getClassname() const {
 
 std::string object::getID() const {
     return m_objectID;
+}
+
+std::string object::getName() const {
+    return m_name;
+}
+
+std::string object::getVehicleIn() const {
+	return m_withinObject;
+}
+
+const std::set<std::string> &object::getCargo() const{
+    return m_objectsWithin;
 }

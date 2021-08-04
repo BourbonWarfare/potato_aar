@@ -14,41 +14,43 @@ class object {
 
 	private:
 		// Any objects that are "inside" this. Can be for storage, crew, etc
-		std::set<object*> m_objectsWithin;
+		std::set<std::string> m_objectsWithin;
 		// The object we are currently inside
-		object *m_withinObject = nullptr;
+		std::string m_withinObject = "";
 
 		lifeState m_lifeState = lifeState::ALIVE;
 
-		// all position ASL
-		float m_positionX = 0.f;
-		float m_positionY = 0.f;
-		float m_positionZ = 0.f;
-
-		// degrees
-		float m_azimuth = 0.f;
-		float m_pitch = 0.f;
-
-		std::string m_objectClassname = "";
-		std::string m_objectID = "";
+        const std::string m_objectClassname = "";
+        const std::string m_objectID = "";
+        const std::string m_name = "";
 
 	public:
-		object(std::string classname, std::string id);
+        // all position ASL
+        float positionX = 0.f;
+        float positionY = 0.f;
+        float positionZ = 0.f;
 
-		void moveIn(object *obj);
-		void moveOut(object *obj);
+        // degrees
+        float azimuth = 0.f;
+        float pitch = 0.f;
 
-		void setPosition(float x, float y, float z);
-		void setAzimuthPitch(float azimuth, float pitch);
+		object(std::string classname, std::string id, std::string name);
+
+		void moveIn(std::string objectUID);
+		void moveOut(std::string objectUID);
 
 		void setLifeState(lifeState state);
 
-		void enter(object *obj);
+		void enter(std::string object);
 		void exit();
 		bool insideObject() const;
 
 		std::string getClassname() const;
 		std::string getID() const;
+        std::string getName() const;
+
+        std::string getVehicleIn() const;
+        const std::set<std::string> &getCargo() const;
 
 };
 
