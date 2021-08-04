@@ -28,7 +28,7 @@ void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseA
         velocity.data[1]->convert(newProjectile.m_velocityY);
         velocity.data[2]->convert(newProjectile.m_velocityZ);
 
-        event.eventInformation[4]->convert(newProjectile.m_classname);
+        event.eventInformation[3]->convert(newProjectile.m_classname);
         m_projectiles[uid].push_back(newProjectile);
 
         m_activeProjectiles[uid] = m_tick;
