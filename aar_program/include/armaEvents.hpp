@@ -17,7 +17,8 @@ enum class armaEvents {
     OBJECT_GET_IN       = 7,
     OBJECT_GET_OUT      = 8,
     CUSTOM              = 9,
-    MISSION_END         = 10,
+    MISSION_LOAD        = 10,
+    MISSION_END         = 11,
 };
 
 struct eventData {

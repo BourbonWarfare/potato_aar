@@ -2,9 +2,7 @@
 #include "dataServer.hpp"
 #include "spdlog/spdlog.h"
 
-#include "eventProcessor.hpp"
-#include "projectileTracker.hpp"
-#include "objectTracker.hpp"
+#include "missionHandler.hpp"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -25,9 +23,7 @@ int main() {
     dataServer server;
     server.subscribe(potato::packetTypes::DEBUG_MESSAGE, logPacket);
 
-    eventProcessor eventHandler(server);
-    projectileTracker projectileHandler(server);
-    objectTracker objectHandler(server);
+    missionHandler mission(server);
 
     glfwInit();
 
@@ -46,28 +42,15 @@ int main() {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     while (!glfwWindowShouldClose(app)) {
-        projectileHandler.update();
-
-        glfwPollEvents();
+        glfwWaitEvents();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        if (ImGui::Begin("Server Overview", false, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
-            int width, height;
-            glfwGetWindowSize(app, &width, &height);
 
-            ImGui::SetWindowSize({ static_cast<float>(width), static_cast<float>(height) });
-            ImGui::SetWindowPos({ 0, 0 });
-
-            if (ImGui::BeginTabBar("##ViewTabs")) {
-                eventHandler.drawInfo();
-                projectileHandler.drawInfo();
-                objectHandler.drawInfo();
-                ImGui::EndTabBar();
-            }
-        }
-        ImGui::End();
+        int width, height;
+        glfwGetWindowSize(app, &width, &height);
+        mission.drawInfo(static_cast<float>(width), static_cast<float>(height));
 
         ImGui::Render();
         int display_w, display_h;
