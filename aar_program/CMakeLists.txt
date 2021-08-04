@@ -9,7 +9,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/spdlog/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/bw_common")
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/imgui")
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/nlohmann")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/external_libraries/nlohmann_json")
 target_include_directories(${PROJECT_NAME} PUBLIC ${GLFW3_INCLUDE_DIR})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
