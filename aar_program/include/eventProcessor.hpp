@@ -17,4 +17,6 @@ class eventProcessor {
     public:
         eventProcessor(dataServer &server);
         void drawInfo() const;
+
+        
 };
