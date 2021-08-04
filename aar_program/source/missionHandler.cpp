@@ -23,6 +23,8 @@ void missionHandler::dumpToDisk() {
     metaInfo["name"] = m_missionName;
     metaInfo["map"] = m_worldName;
     metaInfo["endTime"] = m_missionEnd;
+    metaInfo["projectileUpdateRate"] = m_projectileUpdateRate;
+    metaInfo["objectUpdateRate"] = m_objectUpdateRate;
     out << metaInfo.dump(4);
     out.close();
 
@@ -42,6 +44,8 @@ void missionHandler::dumpToDisk() {
 void missionHandler::onStart(eventData &event) {
     event.eventInformation[0]->convert(m_worldName);
     event.eventInformation[1]->convert(m_missionName);
+    event.eventInformation[2]->convert(m_objectUpdateRate);
+    event.eventInformation[3]->convert(m_projectileUpdateRate);
 
     time_t rawtime;
     struct tm *timeinfo;

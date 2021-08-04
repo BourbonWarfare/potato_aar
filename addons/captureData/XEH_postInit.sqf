@@ -22,7 +22,9 @@ addMissionEventHandler ["Ended", LINKFUNC(endMission)];
 
 private _missionInfo = [
     worldName,
-    missionName
+    missionName,
+    OBJECT_UPDATE_RATE,
+    PROJECTILE_UPDATE_RATE
 ];
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, [EVENT_MISSION_START, CBA_missionTime, _missionInfo]]];
 

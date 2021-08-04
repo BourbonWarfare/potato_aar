@@ -18,6 +18,9 @@ class missionHandler {
         std::string m_missionDate = "";
         double m_missionEnd = 0.0;
 
+        double m_projectileUpdateRate = 0.0;
+        double m_objectUpdateRate = 0.0;
+
         std::string m_missionName = "";
         std::string m_worldName = "";
 
