@@ -45,7 +45,7 @@ int main() {
     //sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
 
     std::unique_ptr<potato::baseARMAVariable> armaArray = std::make_unique<potato::armaArray>();
-    armaArray->fromString("[\"first\",1,2,3,4,5,6,7,8,9,0,true,false,[1,2,3,\"test\"]]");
+    armaArray->fromString("[\"a\",1,true,false,[1,\"b\",false],2,[\"foo\"],\"bar\",true,[],3]");
     void *dataPtr = armaArray->getDataPointer();
 
     std::unique_ptr<potato::baseARMAVariable> armaArray2 = std::make_unique<potato::armaArray>();

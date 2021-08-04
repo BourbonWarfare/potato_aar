@@ -281,7 +281,9 @@ namespace potato {
                     }
                     else {
                         if (str[currentIndex] == ',') {
-                            pushData(arrayStack.top()->data, dataString);
+                            if (dataString != "") {
+                                pushData(arrayStack.top()->data, dataString);
+                            }
                             dataString = "";
                         } else if (str[currentIndex] != ' ') {
                             dataString += str[currentIndex];
