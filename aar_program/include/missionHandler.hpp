@@ -15,12 +15,17 @@
 class dataServer;
 class missionHandler {
     private:
+        std::string m_missionDate = "";
+        double m_missionEnd = 0.0;
+
         std::string m_missionName = "";
         std::string m_worldName = "";
 
         eventProcessor m_eventHandler;
         projectileTracker m_projectileHandler;
         objectTracker m_objectHandler;
+
+        void dumpToDisk();
 
         void onStart(eventData &event);
         void onEnd(eventData &event);

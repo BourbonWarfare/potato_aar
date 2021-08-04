@@ -2,6 +2,7 @@
 #include "dataServer.hpp"
 #include "spdlog/spdlog.h"
 #include "imgui.h"
+#include "nlohmann/json.hpp"
 
 void eventProcessor::logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
     m_eventQueue.emplace_back(variables);
@@ -31,4 +32,26 @@ void eventProcessor::drawInfo() const {
         }
         ImGui::EndTabItem();
     }
+}
+
+nlohmann::json eventProcessor::serialise() const {
+    std::vector<nlohmann::json> events;
+    for (auto &event : m_eventQueue) {
+        nlohmann::json jsonEvent;
+        jsonEvent["type"] = potato::getEventString(event.type);
+        jsonEvent["time"] = event.eventTime;
+
+        std::vector<std::string> variables;
+        for (auto &variable : event.eventInformation) {
+            variables.emplace_back(variable->toString());
+        }
+
+        jsonEvent["arguments"] = variables;
+        events.push_back(jsonEvent);
+    }
+
+    nlohmann::json eventList;
+    eventList["size"] = events.size();
+    eventList["events"] = events;
+    return eventList;
 }

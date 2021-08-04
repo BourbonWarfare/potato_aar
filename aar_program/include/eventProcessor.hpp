@@ -6,6 +6,7 @@
 #include <memory>
 #include "armaEvents.hpp"
 #include "bw/armaTypes.hpp"
+#include "nlohmann/json_fwd.hpp"
 
 class dataServer;
 class eventProcessor {
@@ -18,5 +19,5 @@ class eventProcessor {
         eventProcessor(dataServer &server);
         void drawInfo() const;
 
-        
+        nlohmann::json serialise() const;
 };
