@@ -2,7 +2,15 @@
 #include "dataServer.hpp"
 #include "spdlog/spdlog.h"
 
+#include "eventProcessor.hpp"
+
 #include "armaEvents.hpp"
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 void logPacket(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
     spdlog::info("debug message");
@@ -13,41 +21,54 @@ void logPacket(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &var
     spdlog::info("end");
 }
 
-void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
-    spdlog::info("game event");
-
-    eventData event;
-
-    potato::armaArray &eventMetaInfo = *static_cast<potato::armaArray*>(variables[0].get());
-
-    double eventNumber = 0;
-    eventMetaInfo.data[0]->convert(eventNumber);
-    eventMetaInfo.data[1]->convert(event.eventTime);
-
-    event.type = static_cast<armaEvents>(eventNumber);
-
-    potato::armaArray &eventInfo = *static_cast<potato::armaArray*>(eventMetaInfo.data[2].get());
-
-    for (auto &variable : eventInfo.data)
-        {
-            event.eventInformation.push_back(variable->copy());
-        }
-
-    spdlog::info("Event: {} Time: {}", potato::getEventString(event.type), event.eventTime);
-    for (auto &variable : event.eventInformation) {
-        spdlog::info("\t{}: {}", potato::getTypeString(variable->type), variable->toString());
-    }
-    spdlog::info("End Event");
-}
-
 int main() {
     dataServer server;
     server.subscribe(potato::packetTypes::DEBUG_MESSAGE, logPacket);
-    server.subscribe(potato::packetTypes::GAME_EVENT, logEvent);
 
-    while (true) {
-        
+    eventProcessor eventHandler(server);
+
+    glfwInit();
+
+    GLFWwindow *app = glfwCreateWindow(640, 480, "AAR Server", nullptr, nullptr);
+    glfwMakeContextCurrent(app);
+    glfwSwapInterval(1); // Enable vsync
+
+    gladLoadGL();
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGui_ImplGlfw_InitForOpenGL(app, true);
+    ImGui_ImplOpenGL3_Init("#version 130");
+
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    while (!glfwWindowShouldClose(app)) {
+        glfwPollEvents();
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+
+
+        ImGui::Render();
+        int display_w, display_h;
+        glfwGetFramebufferSize(app, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        glfwSwapBuffers(app);
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwDestroyWindow(app);
+    glfwTerminate();
 
     return 0;
 }

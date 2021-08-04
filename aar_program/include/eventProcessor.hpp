@@ -1,23 +1,19 @@
 // eventProcessor.hpp
-// Process events sent from ARMA
+// Reads events from ARMA and allows them to be output as JSON
 #pragma once
 #include <vector>
 #include <queue>
 #include <memory>
-#include <ostream>
 #include "armaEvents.hpp"
-
-namespace potato {
-	struct baseARMAVariable;
-}
+#include "bw/armaTypes.hpp"
 
 class dataServer;
-class eventProcessor {
-	private:
-		std::queue<eventData> m_events;
-		void readPacket(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
+class eventProcessor
+    {
+        private:
+            //std::queue<eventData> m_eventQueue;
 
-	public:
-		eventProcessor(dataServer &server);
-		void outputData(std::ostream &out);
-};
+        public:
+            eventProcessor(dataServer &server);
+            void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
+    };
