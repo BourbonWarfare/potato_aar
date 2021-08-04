@@ -15,3 +15,6 @@ PREP(trackProjectiles);
 PREP(markerUpdated);
 PREP(markerCreated);
 PREP(markerDeleted);
+
+PREP(sendEvent);
+PREP(endMission);

@@ -15,3 +15,6 @@ addMissionEventHandler ["MarkerCreated", LINKFUNC(markerCreated)];
 addMissionEventHandler ["MarkerDeleted", LINKFUNC(markerDestroyed)];
 addMissionEventHandler ["MarkerUpdated", LINKFUNC(markerUpdated)];
 
+[QGVAR(sendEvent), LINKFUNC(sendEvent)] call CBA_fnc_addEventHandler;
+[QGVAR(endMission), LINKFUNC(endMission)] call CBA_fnc_addEventHandler;
+

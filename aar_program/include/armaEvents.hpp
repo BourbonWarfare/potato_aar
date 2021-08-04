@@ -7,7 +7,7 @@
 #include "bw/armaTypes.hpp"
 
 enum class armaEvents {
-	NONE = 0,
+	NONE                = 0,
 	OBJECT_CREATED      = 1,
 	OBJECT_KILLED       = 2,
     FIRED               = 3,
@@ -15,7 +15,9 @@ enum class armaEvents {
     MARKER_DESTROYED    = 5,
     MARKER_UPDATED      = 6,
     OBJECT_GET_IN       = 7,
-    OBJECT_GET_OUT      = 8
+    OBJECT_GET_OUT      = 8,
+    CUSTOM              = 9,
+    MISSION_END         = 10,
 };
 
 struct eventData {

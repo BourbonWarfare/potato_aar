@@ -11,6 +11,8 @@ void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseA
         unsigned int uid = -1;
 
         projectile newProjectile;
+        newProjectile.m_time = event.eventTime;
+
         event.eventInformation[0]->convert(uid);
         newProjectile.m_uid = static_cast<unsigned int>(uid);
 
@@ -51,6 +53,8 @@ void projectileTracker::updateProjectile(const std::vector<std::unique_ptr<potat
         unsigned int realUID = static_cast<unsigned int>(uid);
         if (m_projectiles.find(realUID) != m_projectiles.end()) {
             projectile updatedProjectile = m_projectiles.at(realUID).back();
+
+            updatedProjectile.m_time = time;
 
             potato::armaArray &pos = *static_cast<potato::armaArray*>(projectileArrayInfo.data[2].get());
             potato::armaArray &up = *static_cast<potato::armaArray*>(projectileArrayInfo.data[3].get());

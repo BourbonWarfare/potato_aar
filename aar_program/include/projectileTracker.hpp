@@ -15,6 +15,8 @@ class projectileTracker{
             std::string m_classname = "";
             unsigned int m_uid = 0;
 
+            double m_time = 0.0;
+
             float m_positionX = 0.f;
             float m_positionY = 0.f;
             float m_positionZ = 0.f;
