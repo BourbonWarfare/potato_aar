@@ -6,9 +6,9 @@
  * Examples:
  * [] call potato_aar_captureData_fnc_fired
  */
-params ["", "_weapon", "", "", "_ammo", "_magazine", "_projectile"];
+params ["", "", "", "", "_ammo", "", "_projectile"];
 
-private _eventData = [EVENT_FIRED, CBA_missionTime, [GVAR(projectileID), getPosASLVisual _projectile, vectorUpVisual _projectile, vectorDirVisual _projectile, _ammo, _magazine, _weapon]];
+private _eventData = [EVENT_FIRED, CBA_missionTime, [GVAR(projectileID), getPosASLVisual _projectile, velocity _projectile, _ammo]];
 GVAR(trackingProjectiles) pushBack [_projectile, GVAR(projectileID)];
 
 GVAR(projectileID) = GVAR(projectileID) + 1;

@@ -3,6 +3,7 @@
 #include "armaEvents.hpp"
 #include "imgui.h"
 #include "spdlog/fmt/fmt.h"
+#include "nlohmann/json.hpp"
 #include <stack>
 
 void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
@@ -16,21 +17,16 @@ void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseA
         event.eventInformation[0]->convert(uid);
         newProjectile.m_uid = static_cast<unsigned int>(uid);
 
-        potato::armaArray &pos = *static_cast<potato::armaArray*>(event.eventInformation[1].get());
-        potato::armaArray &up = *static_cast<potato::armaArray*>(event.eventInformation[2].get());
-        potato::armaArray &dir = *static_cast<potato::armaArray*>(event.eventInformation[3].get());
+        potato::armaArray &position = *static_cast<potato::armaArray*>(event.eventInformation[1].get());
+        potato::armaArray &velocity = *static_cast<potato::armaArray*>(event.eventInformation[2].get());
 
-        pos.data[0]->convert(newProjectile.m_positionX);
-        pos.data[1]->convert(newProjectile.m_positionY);
-        pos.data[2]->convert(newProjectile.m_positionZ);
+        position.data[0]->convert(newProjectile.m_positionX);
+        position.data[1]->convert(newProjectile.m_positionY);
+        position.data[2]->convert(newProjectile.m_positionZ);
 
-        dir.data[0]->convert(newProjectile.m_vectorDirX);
-        dir.data[1]->convert(newProjectile.m_vectorDirY);
-        dir.data[2]->convert(newProjectile.m_vectorDirZ);
-
-        up.data[0]->convert(newProjectile.m_vectorUpX);
-        up.data[1]->convert(newProjectile.m_vectorUpY);
-        up.data[2]->convert(newProjectile.m_vectorUpZ);
+        velocity.data[0]->convert(newProjectile.m_velocityX);
+        velocity.data[1]->convert(newProjectile.m_velocityY);
+        velocity.data[2]->convert(newProjectile.m_velocityZ);
 
         event.eventInformation[4]->convert(newProjectile.m_classname);
         m_projectiles[uid].push_back(newProjectile);
@@ -56,21 +52,16 @@ void projectileTracker::updateProjectile(const std::vector<std::unique_ptr<potat
 
             updatedProjectile.m_time = time;
 
-            potato::armaArray &pos = *static_cast<potato::armaArray*>(projectileArrayInfo.data[2].get());
-            potato::armaArray &up = *static_cast<potato::armaArray*>(projectileArrayInfo.data[3].get());
-            potato::armaArray &dir = *static_cast<potato::armaArray*>(projectileArrayInfo.data[4].get());
+            potato::armaArray &position = *static_cast<potato::armaArray*>(projectileArrayInfo.data[2].get());
+            potato::armaArray &velocity = *static_cast<potato::armaArray*>(projectileArrayInfo.data[3].get());
 
-            pos.data[0]->convert(updatedProjectile.m_positionX);
-            pos.data[1]->convert(updatedProjectile.m_positionY);
-            pos.data[2]->convert(updatedProjectile.m_positionZ);
+            position.data[0]->convert(updatedProjectile.m_positionX);
+            position.data[1]->convert(updatedProjectile.m_positionY);
+            position.data[2]->convert(updatedProjectile.m_positionZ);
 
-            dir.data[0]->convert(updatedProjectile.m_vectorDirX);
-            dir.data[1]->convert(updatedProjectile.m_vectorDirY);
-            dir.data[2]->convert(updatedProjectile.m_vectorDirZ);
-
-            up.data[0]->convert(updatedProjectile.m_vectorUpX);
-            up.data[1]->convert(updatedProjectile.m_vectorUpY);
-            up.data[2]->convert(updatedProjectile.m_vectorUpZ);
+            velocity.data[0]->convert(updatedProjectile.m_velocityX);
+            velocity.data[1]->convert(updatedProjectile.m_velocityY);
+            velocity.data[2]->convert(updatedProjectile.m_velocityZ);
 
             m_projectiles.at(realUID).push_back(updatedProjectile);
             m_activeProjectiles[uid] = m_tick;
@@ -80,10 +71,9 @@ void projectileTracker::updateProjectile(const std::vector<std::unique_ptr<potat
 }
 
 void projectileTracker::drawProjectileInfo(const projectile &projectile) const {
-    ImGui::Text(fmt::format("UID: {}", projectile.m_uid).c_str());
+    ImGui::Text(fmt::format("Time: {}", projectile.m_time).c_str());
     ImGui::Text(fmt::format("Position: [{} {} {}]", projectile.m_positionX, projectile.m_positionY, projectile.m_positionZ).c_str());
-    ImGui::Text(fmt::format("Vector Dir: [{} {} {}]", projectile.m_vectorDirX, projectile.m_vectorDirY, projectile.m_vectorDirZ).c_str());
-    ImGui::Text(fmt::format("Vector Up: [{} {} {}]", projectile.m_vectorUpX, projectile.m_vectorUpY, projectile.m_vectorUpZ).c_str());
+    ImGui::Text(fmt::format("Velocity: [{} {} {}]", projectile.m_velocityX, projectile.m_velocityY, projectile.m_velocityZ).c_str());
 }
 
 projectileTracker::projectileTracker(dataServer &server) {
@@ -93,6 +83,9 @@ projectileTracker::projectileTracker(dataServer &server) {
 
 void projectileTracker::drawInfo() const {
     if (ImGui::BeginTabItem("Projectile Tracking")) {
+        ImGui::BeginMenuBar();
+        ImGui::Text(fmt::format("Projectile Count: {}", m_projectiles.size()).c_str());
+        ImGui::EndMenuBar();
         if (ImGui::BeginTabBar("##ProjectileTabs")) {
             if (ImGui::BeginTabItem("All Projectiles")) {
                 for (auto &projectile : m_projectiles) {
@@ -143,3 +136,30 @@ void projectileTracker::update()
             toRemove.pop();
         }
     }
+
+nlohmann::json projectileTracker::serialise() const {
+    nlohmann::json allProjectiles;
+    allProjectiles["count"] = m_projectiles.size();
+    for (auto &projectile : m_projectiles) {
+        std::vector<nlohmann::json> updateData;
+        for (auto &update : projectile.second) {
+            nlohmann::json updateJSON;
+
+            updateJSON["time"] = update.m_time;
+
+            updateJSON["x"] = update.m_positionX;
+            updateJSON["y"] = update.m_positionY;
+            updateJSON["z"] = update.m_positionZ;
+
+            updateJSON["velocityX"] = update.m_velocityX;
+            updateJSON["velocityY"] = update.m_velocityY;
+            updateJSON["velocityZ"] = update.m_velocityZ;
+
+            updateData.push_back(updateJSON);
+        }
+        allProjectiles[std::to_string(projectile.first)]["updates"] = updateData;
+        allProjectiles[std::to_string(projectile.first)]["classname"] = projectile.second.back().m_classname;
+    }
+
+    return allProjectiles;
+}

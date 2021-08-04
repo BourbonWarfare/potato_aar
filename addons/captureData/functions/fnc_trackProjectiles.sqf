@@ -19,8 +19,7 @@ private _packets = [];
         CBA_missionTime,
         _projectileUID,
         getPosASLVisual _projectile,
-        vectorUpVisual _projectile,
-        vectorDirVisual _projectile
+        velocity _projectile
     ];
 
     _packets pushBack _projectileData;

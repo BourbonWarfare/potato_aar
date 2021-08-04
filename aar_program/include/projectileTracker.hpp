@@ -8,6 +8,8 @@
 #include <string>
 #include "bw/armaTypes.hpp"
 
+#include "nlohmann/json_fwd.hpp"
+
 class dataServer;
 class projectileTracker{
     private:
@@ -21,13 +23,9 @@ class projectileTracker{
             float m_positionY = 0.f;
             float m_positionZ = 0.f;
 
-            float m_vectorUpX = 0.f;
-            float m_vectorUpY = 0.f;
-            float m_vectorUpZ = 0.f;
-
-            float m_vectorDirX = 0.f;
-            float m_vectorDirY = 0.f;
-            float m_vectorDirZ = 0.f;
+            float m_velocityX = 0.f;
+            float m_velocityY = 0.f;
+            float m_velocityZ = 0.f;
         };
 
         std::unordered_map<unsigned int, unsigned int> m_activeProjectiles;
@@ -49,5 +47,7 @@ class projectileTracker{
         void drawInfo() const;
 
         void update();
+
+        nlohmann::json serialise() const;
 };
 
