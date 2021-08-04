@@ -4,8 +4,6 @@
 
 #include "eventProcessor.hpp"
 
-#include "armaEvents.hpp"
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "imgui.h"
@@ -49,8 +47,16 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        if (ImGui::Begin("Server Overview", false, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+            ImGui::SetWindowSize({ 640, 480 });
+            ImGui::SetWindowPos({ 0, 0 });
 
-
+            if (ImGui::BeginTabBar("##ViewTabs")) {
+                eventHandler.drawInfo();
+                ImGui::EndTabBar();
+            }
+        }
+        ImGui::End();
 
         ImGui::Render();
         int display_w, display_h;

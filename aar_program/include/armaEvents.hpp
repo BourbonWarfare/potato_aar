@@ -22,6 +22,23 @@ struct eventData {
 	armaEvents type = armaEvents::NONE;
 	double eventTime = 0.0;
 	std::vector<std::unique_ptr<potato::baseARMAVariable>> eventInformation;
+
+    eventData() = default;
+    eventData(const eventData &rhs) {
+        *this = rhs;
+    }
+
+    eventData &operator=(const eventData &rhs) {
+        if (&rhs != this) {
+            this->type = rhs.type;
+            this->eventTime = rhs.eventTime;
+            for (auto &variable : rhs.eventInformation) {
+                this->eventInformation.push_back(std::move(variable->copy()));
+            }
+        }
+
+        return *this;
+    }
 };
 
 namespace potato {
