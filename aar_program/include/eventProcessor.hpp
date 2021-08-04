@@ -12,9 +12,9 @@ class eventProcessor {
     private:
         std::deque<eventData> m_eventQueue;
 
-    public:
-        eventProcessor(dataServer &server);
         void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
 
+    public:
+        eventProcessor(dataServer &server);
         void drawInfo() const;
 };
