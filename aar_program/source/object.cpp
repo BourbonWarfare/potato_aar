@@ -14,10 +14,6 @@ void object::moveOut(std::string objectUID) {
     m_objectsWithin.extract(objectUID);
 }
 
-void object::setLifeState(object::lifeState state) {
-    m_lifeState = state;
-}
-
 void object::enter(std::string object) {
     m_withinObject = object;
 }

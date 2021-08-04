@@ -30,7 +30,7 @@ void objectTracker::destroyed(eventData &event) {
     event.eventInformation[0]->convert(uid);
 
     if (m_objects.find(uid) != m_objects.end()) {
-        m_objects.at(uid).setLifeState(object::lifeState::DEAD);
+        m_objects.at(uid).lifeState = object::lifeState::DEAD;
     }
 }
 
@@ -135,6 +135,20 @@ void objectTracker::drawInfo() const {
                         }
                         ImGui::TreePop();
                     }
+                }
+
+                switch (worldObject.second.lifeState) {
+                    case object::lifeState::ALIVE:
+                        ImGui::Text("Alive");
+                        break;
+                    case object::lifeState::UNCONCIOUS:
+                        ImGui::Text("Unconcious");
+                        break;
+                    case object::lifeState::DEAD:
+                        ImGui::Text("Dead");
+                        break;
+                    default:
+                        break;
                 }
 
                 ImGui::TreePop();

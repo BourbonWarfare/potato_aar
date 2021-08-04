@@ -18,8 +18,6 @@ class object {
 		// The object we are currently inside
 		std::string m_withinObject = "";
 
-		lifeState m_lifeState = lifeState::ALIVE;
-
         const std::string m_objectClassname = "";
         const std::string m_objectID = "";
         const std::string m_name = "";
@@ -34,12 +32,12 @@ class object {
         float azimuth = 0.f;
         float pitch = 0.f;
 
+        lifeState lifeState = lifeState::ALIVE;
+
 		object(std::string classname, std::string id, std::string name);
 
 		void moveIn(std::string objectUID);
 		void moveOut(std::string objectUID);
-
-		void setLifeState(lifeState state);
 
 		void enter(std::string object);
 		void exit();
