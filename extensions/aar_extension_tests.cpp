@@ -3,6 +3,7 @@
 #include "spdlog/spdlog.h"
 #include "dataSender.hpp"
 #include "bw/armaTypes.hpp"
+#include "bw/packetHeader.hpp"
 #include <string>
 #include <vector>
 #include <memory>
@@ -13,9 +14,7 @@ void copyDataToBuffer(void *data, int dataSize, std::vector<std::uint8_t> &buffe
     }
 }
 
-int main() {
-    dataSender sender;
-
+void testSending(dataSender &sender) {
     std::vector<std::unique_ptr<potato::baseARMAVariable>> args;
     args.push_back(std::make_unique<potato::armaVariable<potato::variableType::NUMBER>>());
     double data = 123.0;
@@ -40,10 +39,12 @@ int main() {
         copyDataToBuffer(&num, sizeof(num), dataToSend);
     }
 
-    //sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
-    //sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
-    //sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+}
 
+void testParsing() {
     std::unique_ptr<potato::baseARMAVariable> simpleFrom = std::make_unique<potato::armaArray>();
     simpleFrom->fromString("[1, true, false, \"foo\", [1, [2.5, 3.3], 4, 5], [], false]");
 
@@ -67,6 +68,33 @@ int main() {
     spdlog::info("array: {}", armaArray->toString());
     spdlog::info("array: {}", armaArray2->toString());
     spdlog::info("array: {}", armaArray3->toString());
+}
+
+void testSplitting(dataSender &sender) {
+    constexpr int limit = 1 + (2 * potato::packetHeader::c_maxPacketSize / sizeof(double));
+    std::vector<std::uint8_t> dataToSend;
+    for (unsigned int i = 0; i < limit; i++) {
+        potato::variableType argumentType = potato::variableType::NUMBER;
+        std::intptr_t sizeOfVariable = sizeof(double);
+
+        double num = i;
+
+        copyDataToBuffer(&argumentType, sizeof(potato::variableType), dataToSend);
+        copyDataToBuffer(&sizeOfVariable, sizeof(sizeOfVariable), dataToSend);
+        copyDataToBuffer(&num, sizeof(num), dataToSend);
+    }
+    sender.sendData(potato::packetTypes::DEBUG_MESSAGE, dataToSend.data(), dataToSend.size());
+    spdlog::info("Sending {} variables", limit);
+}
+
+int main() {
+    dataSender sender;
+
+    testSending(sender);
+    testParsing();
+    testSplitting(sender);
+
+    
 
     while(true) {}
 

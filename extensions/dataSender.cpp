@@ -1,6 +1,7 @@
 #include "dataSender.hpp"
 #include "bw/packetHeader.hpp"
 #include "spdlog/spdlog.h"
+#include <algorithm>
 
 void dataSender::swapBuffers()  {
     m_currentPopulateBuffer = &m_buffers[m_bufferIndex];
@@ -23,44 +24,66 @@ void dataSender::send() {
         m_newData = false;
 
         // prepend header and send across network
-        std::uint16_t totalSize = sizeof(totalSize);
-        std::vector<uint8_t> data;
         for (const auto &packetMetaData : *m_currentSendBuffer) {
-            std::vector<uint8_t> thisData;
-            potato::packetHeader header;
-            header.sizeInBytes = static_cast<uint16_t>(packetMetaData.buffer.size() * sizeof(dataType));
-            header.type = packetMetaData.packetType;
-            header.packetNumber = m_currentPacketNumber++;
-            header.packetGroup = m_currentPacketGroup++;
-            
-            thisData.resize(potato::packetHeader::c_headerSizeBytes);
-            // convert header data in memory to data we can send
-            for (uint8_t i = 0; i < potato::packetHeader::c_headerSizeBytes; i++) {
-                thisData[i] = reinterpret_cast<char*>(&header)[i];
+            std::uint16_t unadjustedSize = static_cast<uint16_t>(packetMetaData.buffer.size() * sizeof(dataType));
+            if (unadjustedSize + potato::packetHeader::c_headerSizeBytes < potato::packetHeader::c_maxPacketSize) {
+                potato::packetHeader header;
+                header.sizeInBytes = unadjustedSize;
+                header.type = packetMetaData.packetType;
+                header.packetNumber = m_currentPacketNumber++;
+                header.packetGroup = m_currentPacketGroup++;
+                header.packetCount = 1;
+
+                std::vector<uint8_t> packet(potato::packetHeader::c_headerSizeBytes);
+                // convert header data in memory to data we can send
+                for (uint8_t i = 0; i < potato::packetHeader::c_headerSizeBytes; i++) {
+                    packet[i] = reinterpret_cast<char*>(&header)[i];
+                }
+                packet.insert(packet.end(), packetMetaData.buffer.begin(), packetMetaData.buffer.end());
+
+                m_connection.send(packet.data(), packet.size() * sizeof(dataType));
+                spdlog::info("sent non-split packet with {} bytes [{} with header]", unadjustedSize, packet.size());
+            } else {
+                // need to split packet into multiple groups
+                // the header could theoretically push us over the limit at some point, so we need to take them into account
+                std::uint16_t allPacketsSize = unadjustedSize;
+                int packetCountWithHeader = 0; // actual amount of packets we need
+                int packetCountNoHeader = 1;
+                while (packetCountWithHeader != packetCountNoHeader) {
+                    packetCountNoHeader = 1 + (allPacketsSize / potato::packetHeader::c_maxPacketSize);
+                    allPacketsSize = unadjustedSize + packetCountNoHeader * potato::packetHeader::c_headerSizeBytes;
+                    packetCountWithHeader = 1 + (allPacketsSize / potato::packetHeader::c_maxPacketSize);
+                }
+
+                std::uint16_t remainingPacketSize = allPacketsSize;
+                std::intptr_t bufferOffset = 0;
+
+                for (std::uint16_t i = 0; i < allPacketsSize; i += potato::packetHeader::c_maxPacketSize) {
+                    potato::packetHeader header;
+                    header.sizeInBytes = std::min(potato::packetHeader::c_maxPacketSize, static_cast<std::uint16_t>(remainingPacketSize - i)) - potato::packetHeader::c_headerSizeBytes;
+                    header.type = packetMetaData.packetType;
+                    header.packetNumber = m_currentPacketNumber++;
+                    header.packetGroup = m_currentPacketGroup;
+                    header.packetCount = packetCountWithHeader;
+
+                    std::vector<dataType> packet(potato::packetHeader::c_headerSizeBytes);
+                    // convert header data in memory to data we can send
+                    for (uint8_t i = 0; i < potato::packetHeader::c_headerSizeBytes; i++) {
+                        packet[i] = reinterpret_cast<char*>(&header)[i];
+                    }
+                    packet.insert(packet.end(), packetMetaData.buffer.begin() + bufferOffset, packetMetaData.buffer.begin() + bufferOffset + header.sizeInBytes);
+
+                    bufferOffset += header.sizeInBytes;
+
+                    m_connection.send(packet.data(), packet.size() * sizeof(dataType));
+                    spdlog::info("sent split packet with {} bytes [{} with header] {}/{}", header.sizeInBytes, packet.size(), 1 + i / potato::packetHeader::c_maxPacketSize, header.packetCount);
+                }
+
+                m_currentPacketGroup++;
             }
-
-            // shitty name, but thisData refers to the packet currently being worked on
-            thisData.insert(thisData.end(), packetMetaData.buffer.begin(), packetMetaData.buffer.end());
-
-            // I know we can refactor this to make it simpler, but my sleep deprived brain cant think that much right now
-            data.insert(data.end(), thisData.begin(), thisData.end());
-
-            totalSize += header.sizeInBytes + potato::packetHeader::c_headerSizeBytes;
         }
 
-        // prepend total packet size so we can read later
-        std::uint8_t totalSizeData[2] = {
-            *(reinterpret_cast<std::uint8_t*>(&totalSize) + 0),
-            *(reinterpret_cast<std::uint8_t*>(&totalSize) + 1)
-        };
-
-        // insert size data at beginning of header so we avoid buffer overruns in server
-        data.insert(data.begin(), std::begin(totalSizeData), std::end(totalSizeData));
-
-        m_connection.send(data.data(), data.size() * sizeof(dataType));
-        m_currentSendBuffer->clear();
-
-        spdlog::info("sent packet with {} bytes [{}, {}]", totalSize, data.size(), *reinterpret_cast<std::uint16_t*>(&totalSizeData));
+        m_currentSendBuffer->clear();       
         std::this_thread::sleep_for(std::chrono::milliseconds(c_sendFrequencyMilliseconds));
     }
 }

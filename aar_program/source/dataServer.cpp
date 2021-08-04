@@ -7,11 +7,44 @@
 
 using asio::ip::udp;
 
+std::vector<std::unique_ptr<potato::baseARMAVariable>> dataServer::construct(packetInfo &packetInformation) {
+    std::sort(packetInformation.m_splitData.begin(), packetInformation.m_splitData.end(), [] (const packetInfo::splitInformation &a, const packetInfo::splitInformation &b) {
+        return a.m_packetNumber < b.m_packetNumber;
+    });
+    std::vector<std::uint8_t> allVariables;
+    for (auto &packet : packetInformation.m_splitData) {
+        allVariables.insert(allVariables.end(), packet.m_data.begin(), packet.m_data.end());
+    }
+
+    std::vector<std::unique_ptr<potato::baseARMAVariable>> variablesInPacket;
+    for (std::uintptr_t offset = 0; offset < allVariables.size(); offset) {
+        potato::variableType type = *reinterpret_cast<potato::variableType*>(allVariables.data() + offset);
+        offset += sizeof(potato::variableType);
+
+        std::intptr_t variableDataSize = *reinterpret_cast<std::intptr_t*>(allVariables.data() + offset);
+        offset += sizeof(std::intptr_t);
+
+        if (offset + variableDataSize > allVariables.size()) {
+            throw std::runtime_error(fmt::format("Variable data exceeds incoming size: {} + {} = {} >= {}", offset, variableDataSize, offset + variableDataSize, variablesInPacket.size()));
+        }
+
+        std::vector<std::uint8_t> variableData(allVariables.data() + offset, allVariables.data() + offset + variableDataSize);
+        offset += variableData.size();
+
+        if (!variableData.empty()) {
+            variablesInPacket.emplace_back(std::move(potato::getARMAVariableFromType(type)));
+            variablesInPacket.back()->set(variableData.data(), type, variableData.size());
+        }
+    }
+
+    return variablesInPacket;
+}
+
 void dataServer::handleMessages() {
     std::vector<std::unique_ptr<potato::baseARMAVariable>> variablesInPacket;
     while (m_running) {
         try {
-            std::array<std::uint8_t, c_maxMessageSizeBytes> receiveBuffer;
+            std::array<std::uint8_t, potato::packetHeader::c_maxPacketSize> receiveBuffer;
             udp::endpoint remoteEndpoint;
             m_socket.receive_from(asio::buffer(receiveBuffer), remoteEndpoint);
 
@@ -19,55 +52,32 @@ void dataServer::handleMessages() {
                 return;
             }
 
-            std::uint16_t totalPacketSize = *reinterpret_cast<std::uint16_t*>(receiveBuffer.data());
-
             // Convert binary data into object data
-            for (int offset = sizeof(totalPacketSize); offset < totalPacketSize; offset) {
-                potato::packetHeader header = *reinterpret_cast<potato::packetHeader*>(receiveBuffer.data() + offset);
-                offset += potato::packetHeader::c_headerSizeBytes;
+            std::uint16_t offset = 0;
+            potato::packetHeader header = *reinterpret_cast<potato::packetHeader*>(receiveBuffer.data() + offset);
+            offset += potato::packetHeader::c_headerSizeBytes;
 
-                unsigned int maxSize = receiveBuffer.size() - offset;
-                std::uint8_t *data = receiveBuffer.data() + offset;
+            unsigned int maxSize = receiveBuffer.size() - offset;
+            std::uint8_t *data = receiveBuffer.data() + offset;
 
-                // Process sub-packet within major-packet
-                for (int i = 0; i < header.sizeInBytes; i) {
-                    potato::variableType type = *reinterpret_cast<potato::variableType*>(data + i);
-                    i += sizeof(potato::variableType);
+            packetInfo &workingPacket = m_inboundPackets[header.packetGroup];
+            workingPacket.m_splitData.emplace_back(packetInfo::splitInformation{
+                std::vector<std::uint8_t>(data, data + header.sizeInBytes),
+                header.packetNumber
+            });
 
-                    std::intptr_t sizeOfType = *reinterpret_cast<std::intptr_t*>(data + i);
-                    i += sizeof(sizeOfType);
-
-                    // get binary data of object
-                    std::vector<std::uint8_t> dataBuffer = {};
-
-                    if (maxSize <= i || maxSize <= i + sizeOfType)
-                        {
-                            throw std::runtime_error(fmt::format("Packet size exceeds data input! maxSize: {} i: {} sizeOfType: {} type: {}", maxSize, i, sizeOfType, potato::getTypeString(type)));
-                        }
-
-                    for (int j = 0; j < sizeOfType; j++) {
-                        dataBuffer.push_back(data[i + j]);
-                    }
-                    i += sizeOfType;
-
-                    if (!dataBuffer.empty()) {
-                        variablesInPacket.push_back(std::move(potato::getARMAVariableFromType(type)));
-                        // security risk, but this is LAN so it doesn't matter
-                        // if this program isn't LAN anymore and this still exists, uh oh you have a security hole.
-                        // The `set` function blindly sets the pointer to whatever type `type` is, so if a false packet comes through it could overrun the buffer and have access to program memory
-                        variablesInPacket.back()->set(dataBuffer.data(), type, sizeOfType);
-                    }
-                }
-
-                offset += header.sizeInBytes;
-                signal(header.type, variablesInPacket);
+            // not worried about packet loss because we are on LAN
+            if (workingPacket.m_splitData.size() >= header.packetCount) {
+                signal(header.type, construct(workingPacket));
                 spdlog::info("Packet with {} variables of type {} recieved and signaled", variablesInPacket.size(), header.type);
-                variablesInPacket.clear();
+
+                m_inboundPackets.erase(header.packetGroup);
             }
-            spdlog::info("processed packet with {} bytes", totalPacketSize);
+
+            spdlog::info("processed packet with {} bytes", header.sizeInBytes);
         }
         catch (std::exception &e) {
-            spdlog::error(e.what());
+            spdlog::error(fmt::format("Packet Reception: {}", e.what()));
         }
     }
 }
@@ -85,3 +95,4 @@ dataServer::~dataServer()
         m_socket.shutdown(asio::socket_base::shutdown_type::shutdown_both);
         m_ioThread.join();
     }
+
