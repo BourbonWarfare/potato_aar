@@ -8,6 +8,8 @@
  */
 params ["_information"];
 
+[GVAR(heartbeatHandle)] call CBA_fnc_removePerFrameHandler;
+
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, [EVENT_MISSION_END, CBA_missionTime, _information]]];
 private _endResult = "potato_aar_extension" callExtension "shutdown";
 

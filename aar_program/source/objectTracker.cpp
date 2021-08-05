@@ -179,6 +179,10 @@ objectTracker::~objectTracker() {
 
 void objectTracker::drawInfo() const {
     if (ImGui::BeginTabItem("Object Tracking")) {
+        ImGui::BeginMenuBar();
+        ImGui::Text(fmt::format("Object Count: {}", m_objects.size()).c_str());
+        ImGui::EndMenuBar();
+
         for (auto &worldObject : m_objects) {
             if (ImGui::TreeNode(worldObject.first.c_str())) {
                 ImGui::Text(fmt::format("Classname: {}", worldObject.second.m_classname).c_str());

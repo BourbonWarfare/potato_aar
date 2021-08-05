@@ -6,10 +6,16 @@
 #include <mutex>
 #include "bw/armaTypes.hpp"
 #include "missionHandler.hpp"
+#include "clock.hpp"
+#include "time.hpp"
 
 class dataServer;
 class serverObserver {
     private:
+        static constexpr int c_heartbeatTimeouts = 5;
+        fe::time m_heartbeatRate;
+        fe::clock m_heartbeatClock;
+
         dataServer &m_server;
 
         std::mutex m_activeMissionsMutex;
@@ -18,6 +24,7 @@ class serverObserver {
         void startMission(eventData &startEvent);
 
         void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
+        void heartbeat(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
 
     public:
         serverObserver(dataServer &server);

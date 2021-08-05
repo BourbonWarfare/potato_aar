@@ -1,6 +1,7 @@
 TRACE_1("",QUOTE(ADDON));
 
 PREP(getObjectUID);
+PREP(heartbeat);
 
 PREP(objectCreated);
 PREP(objectKilled);

@@ -12,7 +12,8 @@ private _missionInfo = [
     worldName,
     missionName,
     OBJECT_UPDATE_RATE,
-    PROJECTILE_UPDATE_RATE
+    PROJECTILE_UPDATE_RATE,
+    HEARTBEAT_RATE
 ];
 
 private _startResult = "potato_aar_extension" callExtension "startup";

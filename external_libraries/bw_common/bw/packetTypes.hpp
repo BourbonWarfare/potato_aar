@@ -10,6 +10,7 @@ namespace potato {
 		GAME_EVENT = 2,
 		UPDATE_PROJECTILE = 3,
 		UPDATE_OBJECT = 4,
+		HEARTBEAT = 5,
 		COUNT,
 		NONE = 0,
 	};

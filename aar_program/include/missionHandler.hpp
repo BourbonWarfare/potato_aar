@@ -35,6 +35,7 @@ class missionHandler {
         std::thread m_dumpThread;
         bool m_readyToDump = false;
         bool m_readyToDelete = false;
+        bool m_dumping = false;
 
         void dumpToDisk();
 
@@ -51,6 +52,8 @@ class missionHandler {
         void update();
 
         void dump();
+        bool isDumping() const;
+
         bool readyToDump() const;
         bool readyToDelete() const;
 

@@ -4,4 +4,5 @@
 #define GAME_EVENT 2
 #define UPDATE_PROJECTILE 3
 #define UPDATE_OBJECT 4
+#define HEARTBEAT 5
 

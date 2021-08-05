@@ -10,6 +10,8 @@
 #include "zip.h"
 
 void missionHandler::dumpToDisk() {
+    m_dumping = true;
+
     std::string missionName = m_missionName;
     missionName.erase(std::find(missionName.begin(), missionName.end(), '\"'), missionName.end());
     if (missionName == "") {
@@ -137,8 +139,13 @@ void missionHandler::update() {
 }
 
 void missionHandler::dump() {
-    m_dumpThread = std::thread(&missionHandler::dumpToDisk, this);
-    m_readyToDump = false;
+    if (!m_dumping) {
+        m_dumpThread = std::thread(&missionHandler::dumpToDisk, this);
+    }
+}
+
+bool missionHandler::isDumping() const {
+    return m_dumping;
 }
 
 bool missionHandler::readyToDump() const {

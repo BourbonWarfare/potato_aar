@@ -5,6 +5,8 @@
 GVAR(projectileID) = 0;
 GVAR(trackingProjectiles) = [];
 
+GVAR(heartbeatHandle) = [LINKFUNC(heartbeat), HEARTBEAT_RATE] call CBA_fnc_addPerFrameHandler;
+
 ["CAManBase", "fired", LINKFUNC(fired)] call CBA_fnc_addClassEventHandler;
 [LINKFUNC(trackProjectiles), PROJECTILE_UPDATE_RATE] call CBA_fnc_addPerFrameHandler;
 
