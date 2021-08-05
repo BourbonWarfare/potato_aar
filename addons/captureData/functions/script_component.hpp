@@ -1,1 +1,1 @@
-#include "\z\potato_aar\arma\addons\captureData\script_component.hpp"
+#include "\z\potato_aar\addons\captureData\script_component.hpp"
