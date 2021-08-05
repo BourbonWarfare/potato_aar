@@ -8,8 +8,14 @@ void eventProcessor::logEvent(const std::vector<std::unique_ptr<potato::baseARMA
     m_eventQueue.emplace_back(variables);
 }
 
-eventProcessor::eventProcessor(dataServer &server) {
-    server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&eventProcessor::logEvent, this, std::placeholders::_1));
+eventProcessor::eventProcessor(dataServer &server) :
+    m_server(server)
+{
+    m_eventID = server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&eventProcessor::logEvent, this, std::placeholders::_1));
+}
+
+eventProcessor::~eventProcessor() {
+    m_server.unsubscribe(potato::packetTypes::GAME_EVENT, m_eventID);
 }
 
 void eventProcessor::drawInfo() const {

@@ -10,12 +10,12 @@ void eventSubscriber::signal(potato::packetTypes packetType, variableType dataFr
 }
 
 int eventSubscriber::subscribe(potato::packetTypes packetType, eventSignature function){
-    int index = m_eventHandlers.size();
+    int uid = m_globalIDs++;
     m_eventHandlers[packetType].push_back(eventCallback{
-        m_globalIDs++,
+        uid,
         function
     });
-    return index;
+    return uid;
 }
 
 void eventSubscriber::unsubscribe(potato::packetTypes packetType, int id) {

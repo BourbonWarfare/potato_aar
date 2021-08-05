@@ -161,9 +161,16 @@ void objectTracker::drawObjectState(const objectInfo::state &state) const {
     }
 }
 
-objectTracker::objectTracker(dataServer &server) {
-    server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&objectTracker::logEvent, this, std::placeholders::_1));
-    server.subscribe(potato::packetTypes::UPDATE_OBJECT, std::bind(&objectTracker::updateObject, this, std::placeholders::_1));
+objectTracker::objectTracker(dataServer &server) :
+    m_server(server)
+{
+    m_eventID = server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&objectTracker::logEvent, this, std::placeholders::_1));
+    m_updateID = server.subscribe(potato::packetTypes::UPDATE_OBJECT, std::bind(&objectTracker::updateObject, this, std::placeholders::_1));
+}
+
+objectTracker::~objectTracker() {
+    m_server.unsubscribe(potato::packetTypes::GAME_EVENT, m_eventID);
+    m_server.unsubscribe(potato::packetTypes::UPDATE_OBJECT, m_updateID);
 }
 
 void objectTracker::drawInfo() const {

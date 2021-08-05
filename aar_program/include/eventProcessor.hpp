@@ -11,12 +11,16 @@
 class dataServer;
 class eventProcessor {
     private:
+        dataServer &m_server;
+        int m_eventID = 0;
+
         std::deque<eventData> m_eventQueue;
 
         void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
 
     public:
         eventProcessor(dataServer &server);
+        ~eventProcessor();
         void drawInfo() const;
 
         nlohmann::json serialise() const;

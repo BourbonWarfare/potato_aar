@@ -76,9 +76,16 @@ void projectileTracker::drawProjectileInfo(const projectile &projectile) const {
     ImGui::Text(fmt::format("Velocity: [{} {} {}]", projectile.m_velocityX, projectile.m_velocityY, projectile.m_velocityZ).c_str());
 }
 
-projectileTracker::projectileTracker(dataServer &server) {
-    server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&projectileTracker::logEvent, this, std::placeholders::_1));
-    server.subscribe(potato::packetTypes::UPDATE_PROJECTILE, std::bind(&projectileTracker::updateProjectile, this, std::placeholders::_1));
+projectileTracker::projectileTracker(dataServer &server) :
+    m_server(server)
+{
+	m_eventID = server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&projectileTracker::logEvent, this, std::placeholders::_1));
+    m_updateProjectileID = server.subscribe(potato::packetTypes::UPDATE_PROJECTILE, std::bind(&projectileTracker::updateProjectile, this, std::placeholders::_1));
+}
+
+projectileTracker::~projectileTracker() {
+    m_server.unsubscribe(potato::packetTypes::GAME_EVENT, m_eventID);
+    m_server.unsubscribe(potato::packetTypes::UPDATE_PROJECTILE, m_updateProjectileID);
 }
 
 void projectileTracker::drawInfo() const {

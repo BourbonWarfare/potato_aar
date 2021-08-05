@@ -53,6 +53,10 @@ class objectTracker {
 
         std::unordered_map<std::string, objectInfo> m_objects;
 
+        dataServer &m_server;
+        int m_eventID = 0;
+        int m_updateID = 0;
+
         void created(eventData &event);
         void destroyed(eventData &event);
         void getIn(eventData &event);
@@ -65,6 +69,7 @@ class objectTracker {
 
     public:
         objectTracker(dataServer &server);
+        ~objectTracker();
         void drawInfo() const;
 
         void serialise(struct zip_t *zip) const;

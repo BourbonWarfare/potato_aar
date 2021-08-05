@@ -31,6 +31,10 @@ class projectileTracker{
         std::unordered_map<unsigned int, unsigned int> m_activeProjectiles;
         std::unordered_map<unsigned int, std::deque<projectile>> m_projectiles;
 
+        dataServer &m_server;
+        int m_eventID = 0;
+        int m_updateProjectileID = 0;
+
         // look out for projectile created events
         void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
         void updateProjectile(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
@@ -44,6 +48,8 @@ class projectileTracker{
 
     public:
         projectileTracker(dataServer &server);
+        ~projectileTracker();
+
         void drawInfo() const;
 
         void update();
