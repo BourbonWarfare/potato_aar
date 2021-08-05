@@ -20,6 +20,12 @@ void logPacket(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &var
 }
 
 int main() {
+    /*
+        SQLite
+        Mission Name | Date | Map
+        Client requests mission -> server retrieves from database and begins stream
+    */
+
     dataServer server;
     server.subscribe(potato::packetTypes::DEBUG_MESSAGE, logPacket);
 
