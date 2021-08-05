@@ -17,4 +17,5 @@ PREP(markerCreated);
 PREP(markerDeleted);
 
 PREP(sendEvent);
+PREP(startMission);
 PREP(endMission);

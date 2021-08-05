@@ -23,3 +23,5 @@ private _markerInfo = [
 ];
 
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, [EVENT_MARKER_UPDATED, CBA_missionTime, _markerInfo]]];
+TRACE_1("marker updated",_result);
+

@@ -19,4 +19,5 @@ private _eventData = [
 ];
 
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, _eventData]];
+TRACE_1("get out",_result);
 

@@ -21,4 +21,5 @@ GVAR(trackingObjects) = GVAR(trackingObjects) select {
 };
 
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, _eventData]];
+TRACE_1("object killed",_result);
 

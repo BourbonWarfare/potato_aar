@@ -9,4 +9,5 @@
 params ["_information"];
 
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, [EVENT_CUSTOM, CBA_missionTime, _information]]];
+TRACE_1("sent event",_result);
 

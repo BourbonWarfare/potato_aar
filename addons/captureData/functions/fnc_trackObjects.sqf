@@ -19,4 +19,5 @@ private _packets = [];
 
 if (_packets isNotEqualTo []) then {
     private _result = "potato_aar_extension" callExtension ["processData", [UPDATE_OBJECT, nil, [CBA_missionTime, _packets]]];
+    TRACE_1("track objects",_result);
 };

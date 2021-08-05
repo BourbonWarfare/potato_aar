@@ -13,4 +13,5 @@ GVAR(trackingProjectiles) pushBack [_projectile, GVAR(projectileID)];
 
 GVAR(projectileID) = GVAR(projectileID) + 1;
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, _eventData]];
+TRACE_1("fired",_result);
 

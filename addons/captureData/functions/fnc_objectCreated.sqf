@@ -31,3 +31,5 @@ private _eventData = [
 GVAR(trackingObjects) pushBack _object;
 
 private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, _eventData]];
+TRACE_1("object created",_result);
+
