@@ -3,7 +3,7 @@
 #include "imgui.h"
 #include "spdlog/spdlog.h"
 #include "nlohmann/json.hpp"
-#include <fstream>
+#include "zip.h"
 
 void objectTracker::created(eventData &event) {
     objectInfo newObject;
@@ -208,7 +208,7 @@ void objectTracker::drawInfo() const {
     }
 }
 
-void objectTracker::serialise(std::string_view directory) const {
+void objectTracker::serialise(struct zip_t *zip) const {
     for (auto &object : m_objects) {
         nlohmann::json workingObject;
 
@@ -235,7 +235,7 @@ void objectTracker::serialise(std::string_view directory) const {
             stateJSON["time"] = state.time;
             stateJSON["occupantOf"] = state.m_occupantOf;
             stateJSON["occupants"] = state.m_occupants;
-            occupationStates.push_back(occupationStates);
+            occupationStates.push_back(stateJSON);
         }
         workingObject["occupationStates"] = occupationStates;
 
@@ -243,10 +243,13 @@ void objectTracker::serialise(std::string_view directory) const {
         filename.erase(std::remove(filename.begin(), filename.end(), '"'), filename.end());
         std::replace(filename.begin(), filename.end(), ':', '_');
 
-        spdlog::info("Saving object state to {}/{}.json", directory, filename);
+        spdlog::info("Saving object state to {}.bson", filename);
 
-        std::ofstream out(fmt::format("{}/{}.json", directory, filename));
-        out << workingObject.dump(4);
-        out.close();
+        zip_entry_open(zip, fmt::format("{}.bson", filename).c_str());
+
+        std::vector<std::uint8_t> bson = nlohmann::json::to_bson(workingObject);
+        zip_entry_write(zip, bson.data(), bson.size());
+
+        zip_entry_close(zip);
     }
 }

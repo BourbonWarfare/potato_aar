@@ -6,6 +6,7 @@
 #include <deque>
 #include <memory>
 #include <string>
+#include <thread>
 #include "bw/armaTypes.hpp"
 
 #include "eventProcessor.hpp"
@@ -28,6 +29,10 @@ class missionHandler {
         projectileTracker m_projectileHandler;
         objectTracker m_objectHandler;
 
+        std::thread m_dumpThread;
+        bool m_readyToDump = false;
+        bool m_complete = false;
+
         void dumpToDisk();
 
         void onStart(eventData &event);
@@ -37,6 +42,11 @@ class missionHandler {
 
     public:
         missionHandler(dataServer &server);
+        ~missionHandler();
+
         void drawInfo(float appWidth, float appHeight);
+
+        void dump();
+        bool complete() const;
 
 };

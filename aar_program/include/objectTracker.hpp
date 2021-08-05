@@ -67,5 +67,5 @@ class objectTracker {
         objectTracker(dataServer &server);
         void drawInfo() const;
 
-        void serialise(std::string_view directory) const;
+        void serialise(struct zip_t *zip) const;
 };

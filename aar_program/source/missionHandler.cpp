@@ -8,6 +8,8 @@
 #include <ctime>
 #include "nlohmann/json.hpp"
 
+#include "zip.h"
+
 void missionHandler::dumpToDisk() {
     std::string missionName = m_missionName;
     missionName.erase(std::find(missionName.begin(), missionName.end(), '\"'), missionName.end());
@@ -15,28 +17,49 @@ void missionHandler::dumpToDisk() {
         missionName = "NO NAME";
     }
 
-    std::string directory = fmt::format("{} - {}", m_missionDate, missionName);
-    std::filesystem::create_directory(directory);
+    std::string filename = fmt::format("{}_{}.zip", m_missionDate, missionName);
 
-    std::ofstream out(fmt::format("{}/meta.json", directory));
-    nlohmann::json metaInfo;
-    metaInfo["name"] = m_missionName;
-    metaInfo["map"] = m_worldName;
-    metaInfo["endTime"] = m_missionEnd;
-    metaInfo["projectileUpdateRate"] = m_projectileUpdateRate;
-    metaInfo["objectUpdateRate"] = m_objectUpdateRate;
-    out << metaInfo.dump(4);
-    out.close();
+    struct zip_t *zip = zip_open(filename.c_str(), ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
 
-    out.open(fmt::format("{}/events.json", directory));
-    out << m_eventHandler.serialise().dump(4);
-    out.close();
+    {
+        zip_entry_open(zip, "meta.bson");
 
-    m_objectHandler.serialise(directory);
+        nlohmann::json metaInfo;
+        metaInfo["name"] = m_missionName;
+        metaInfo["map"] = m_worldName;
+        metaInfo["endTime"] = m_missionEnd;
+        metaInfo["projectileUpdateRate"] = m_projectileUpdateRate;
+        metaInfo["objectUpdateRate"] = m_objectUpdateRate;
 
-    out.open(fmt::format("{}/projectiles.json", directory));
-    out << m_projectileHandler.serialise().dump(4);
-    out.close();
+        std::vector<std::uint8_t> bson = nlohmann::json::to_bson(metaInfo);
+        zip_entry_write(zip, bson.data(), bson.size());
+
+        zip_entry_close(zip);
+    }
+
+    {
+        zip_entry_open(zip, "events.bson");
+
+        std::vector<std::uint8_t> bson = nlohmann::json::to_bson(m_eventHandler.serialise());
+        zip_entry_write(zip, bson.data(), bson.size());
+
+        zip_entry_close(zip);
+    }
+
+    m_objectHandler.serialise(zip);
+
+    {
+        zip_entry_open(zip, "projectiles.bson");
+
+        std::vector<std::uint8_t> bson = nlohmann::json::to_bson(m_projectileHandler.serialise());
+        zip_entry_write(zip, bson.data(), bson.size());
+
+        zip_entry_close(zip);
+    }
+
+    zip_close(zip);
+
+    m_complete = true;
 }
 
 void missionHandler::onStart(eventData &event) {
@@ -58,7 +81,7 @@ void missionHandler::onStart(eventData &event) {
 
 void missionHandler::onEnd(eventData &event) {
     m_missionEnd = event.eventTime;
-    dumpToDisk();
+    m_readyToDump = true;
 }
 
 void missionHandler::logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
@@ -84,6 +107,12 @@ missionHandler::missionHandler(dataServer &server) :
     server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&missionHandler::logEvent, this, std::placeholders::_1));
 }
 
+missionHandler::~missionHandler() {
+    if (m_dumpThread.joinable()) {
+        m_dumpThread.join();
+    }
+}
+
 void missionHandler::drawInfo(float appWidth, float appHeight) {
     m_projectileHandler.update();
 
@@ -91,18 +120,14 @@ void missionHandler::drawInfo(float appWidth, float appHeight) {
         ImGui::SetWindowSize({ appWidth, appHeight });
         ImGui::SetWindowPos({ 0, 0 });
 
-        ImGui::BeginMenuBar();
-
-        ImGui::Text(fmt::format("Mission: {}", m_missionName).c_str());
-        ImGui::Text(fmt::format("Map: {}", m_worldName).c_str());
-
-        if (ImGui::Button("Dump To Disk")) {
-            dumpToDisk();
-        }
-
-        ImGui::EndMenuBar();
-
         if (ImGui::BeginTabBar("##ViewTabs")) {
+            if (ImGui::BeginTabItem("Mission Information")) {
+                ImGui::Text(fmt::format("Date: {}", m_missionDate).c_str());
+                ImGui::Text(fmt::format("Mission: {}", m_missionName).c_str());
+                ImGui::Text(fmt::format("Map: {}", m_worldName).c_str());
+                ImGui::EndTabItem();
+            }
+
             m_eventHandler.drawInfo();
             m_projectileHandler.drawInfo();
             m_objectHandler.drawInfo();
@@ -110,4 +135,13 @@ void missionHandler::drawInfo(float appWidth, float appHeight) {
         }
     }
     ImGui::End();
+}
+
+void missionHandler::dump() {
+    while (!m_readyToDump) {}
+    m_dumpThread = std::thread(&missionHandler::dumpToDisk, this);
+}
+
+bool missionHandler::complete() const {
+    return m_complete;
 }
