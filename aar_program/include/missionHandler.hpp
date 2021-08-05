@@ -27,6 +27,7 @@ class missionHandler {
 
         std::string m_missionName = "";
         std::string m_worldName = "";
+        double m_worldSize = 0.0;
 
         eventProcessor m_eventHandler;
         projectileTracker m_projectileHandler;

@@ -10,6 +10,7 @@ params ["_information"];
 
 private _missionInfo = [
     worldName,
+    worldSize,
     missionName,
     OBJECT_UPDATE_RATE,
     PROJECTILE_UPDATE_RATE,

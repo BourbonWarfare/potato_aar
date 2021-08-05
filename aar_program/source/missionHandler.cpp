@@ -23,17 +23,18 @@ void missionHandler::dumpToDisk() {
     struct zip_t *zip = zip_open(filename.c_str(), ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
 
     {
-        zip_entry_open(zip, "meta.bson");
+        zip_entry_open(zip, "meta.json");
 
         nlohmann::json metaInfo;
         metaInfo["name"] = m_missionName;
         metaInfo["map"] = m_worldName;
+        metaInfo["mapSize"] = m_worldSize;
         metaInfo["endTime"] = m_missionEnd;
         metaInfo["projectileUpdateRate"] = m_projectileUpdateRate;
         metaInfo["objectUpdateRate"] = m_objectUpdateRate;
 
-        std::vector<std::uint8_t> bson = nlohmann::json::to_bson(metaInfo);
-        zip_entry_write(zip, bson.data(), bson.size());
+        std::string metaInfoString = metaInfo.dump(4);
+        zip_entry_write(zip, metaInfoString.c_str(), metaInfoString.size());
 
         zip_entry_close(zip);
     }
@@ -67,9 +68,10 @@ void missionHandler::onStart(eventData &event) {
     potato::armaArray &metaInfo = *static_cast<potato::armaArray*>(event.eventInformation[0].get());
 
     metaInfo.data[0]->convert(m_worldName);
-    metaInfo.data[1]->convert(m_missionName);
-    metaInfo.data[2]->convert(m_objectUpdateRate);
-    metaInfo.data[3]->convert(m_projectileUpdateRate);
+    metaInfo.data[1]->convert(m_worldSize);
+    metaInfo.data[2]->convert(m_missionName);
+    metaInfo.data[3]->convert(m_objectUpdateRate);
+    metaInfo.data[4]->convert(m_projectileUpdateRate);
 
     time_t rawtime;
     struct tm *timeinfo;
@@ -124,6 +126,7 @@ void missionHandler::drawInfo() const {
             ImGui::Text(fmt::format("Date: {}", m_missionDate).c_str());
             ImGui::Text(fmt::format("Mission: {}", m_missionName).c_str());
             ImGui::Text(fmt::format("Map: {}", m_worldName).c_str());
+            ImGui::Text(fmt::format("Map Size: {}", m_worldSize).c_str());
             ImGui::EndTabItem();
         }
 

@@ -12,7 +12,7 @@ void serverObserver::startMission(eventData &startEvent) {
     potato::armaArray &metaInfo = *static_cast<potato::armaArray*>(startEvent.eventInformation[0].get());
 
     double heartbeatRate = 0.0;
-    metaInfo.data[4]->convert(heartbeatRate);
+    metaInfo.data[5]->convert(heartbeatRate);
     m_heartbeatRate = fe::seconds(heartbeatRate);
 
     m_heartbeatClock.restart();
@@ -23,6 +23,10 @@ void serverObserver::logEvent(const std::vector<std::unique_ptr<potato::baseARMA
     switch (event.type) {
         case armaEvents::MISSION_LOAD:
             startMission(event);
+            spdlog::info("Mission Load");
+            break;
+        case armaEvents::MISSION_END:
+            spdlog::info("Mission End");
             break;
         default:
             break;
