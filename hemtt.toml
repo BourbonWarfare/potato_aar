@@ -2,7 +2,7 @@ name = "potato_aar"
 prefix = "potato_aar"
 author = "Potato Mashers"
 files = [
-    "arma/mod.cpp"
+    "mod.cpp"
 ]
 
 

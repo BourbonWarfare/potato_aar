@@ -57,7 +57,7 @@ if sys.platform == "win32":
     import winreg
 
 ######## GLOBALS #########
-project = "@potato"
+project = "@potato_aar"
 project_version = "3.0.0"
 arma3tools_path = ""
 work_drive = ""
@@ -66,13 +66,13 @@ make_root = ""
 release_dir = ""
 module_root_parent = ""
 optionals_root = ""
-key_name = "potato"
+key_name = "potato_aar"
 key = ""
 dssignfile = ""
-prefix = "potato"
-pbo_name_prefix = "potato"
+prefix = "potato_aar"
+pbo_name_prefix = "potato_aar"
 signature_blacklist = []
-importantFiles = ["mod.cpp", "README.md", "potato_icon_ca.paa"]
+importantFiles = ["mod.cpp", "README.md"]
 versionFiles = ["mod.cpp"]
 
 ciBuild = False # Used for CI builds
@@ -529,7 +529,7 @@ def get_project_version(version_increments=[]):
     #do the magic based on https://github.com/acemod/ACE3/issues/806#issuecomment-95639048
 
     try:
-        scriptModPath = os.path.join(module_root, "core\script_version.hpp")
+        scriptModPath = os.path.join(module_root, "main\script_version.hpp")
 
         if os.path.isfile(scriptModPath):
             f = open(scriptModPath, "r")

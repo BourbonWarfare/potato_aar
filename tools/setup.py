@@ -13,7 +13,7 @@ import winreg
 
 ######## GLOBALS #########
 MAINDIR = "z"
-PROJECTDIR = "potato"
+PROJECTDIR = "potato_aar"
 ##########################
 
 def main():
