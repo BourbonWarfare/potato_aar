@@ -38,7 +38,7 @@ class missionHandler {
         bool m_readyToDelete = false;
         bool m_dumping = false;
 
-        void dumpToDisk();
+        void dumpToDisk() const;
 
         void onStart(eventData &event);
         void onEnd(eventData &event);

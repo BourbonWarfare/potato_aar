@@ -9,11 +9,9 @@
 #include "nlohmann/json.hpp"
 #include "zip.h"
 
-void missionHandler::dumpToDisk() {
-    m_dumping = true;
-
+void missionHandler::dumpToDisk() const {
     std::string missionName = m_missionName;
-    missionName.erase(std::find(missionName.begin(), missionName.end(), '\"'), missionName.end());
+    missionName.erase(std::remove(missionName.begin(), missionName.end(), '\"'), missionName.end());
     if (missionName == "") {
         missionName = "NO NAME";
     }
@@ -60,8 +58,6 @@ void missionHandler::dumpToDisk() {
     }
 
     zip_close(zip);
-
-    m_readyToDelete = true;
 }
 
 void missionHandler::onStart(eventData &event) {
@@ -143,7 +139,11 @@ void missionHandler::update() {
 
 void missionHandler::dump() {
     if (!m_dumping) {
-        m_dumpThread = std::thread(&missionHandler::dumpToDisk, this);
+        m_dumping = true;
+        m_dumpThread = std::thread([this] () {
+            dumpToDisk();
+            m_readyToDelete = true;
+        });
     }
 }
 
