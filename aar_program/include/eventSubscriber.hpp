@@ -23,5 +23,7 @@ class eventSubscriber {
 
     public:
         // Subscribe a function to be called when we receive a packet of type
-        void subscribe(potato::packetTypes packetType, eventSignature function);
+        int subscribe(potato::packetTypes packetType, eventSignature function);
+
+        void unsubscribe(potato::packetTypes packetType, int id);
 };

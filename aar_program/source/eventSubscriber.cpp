@@ -8,6 +8,13 @@ void eventSubscriber::signal(potato::packetTypes packetType, variableType dataFr
     }
 }
 
-void eventSubscriber::subscribe(potato::packetTypes packetType, eventSignature function){
+int eventSubscriber::subscribe(potato::packetTypes packetType, eventSignature function){
+    int index = m_eventHandlers.size();
     m_eventHandlers[packetType].push_back(function);
+    return index;
+}
+
+void eventSubscriber::unsubscribe(potato::packetTypes packetType, int id) {
+    if (m_eventHandlers.find(packetType) == m_eventHandlers.end()) { return; }
+    m_eventHandlers.at(packetType).erase(m_eventHandlers.at(packetType).begin() + id);
 }

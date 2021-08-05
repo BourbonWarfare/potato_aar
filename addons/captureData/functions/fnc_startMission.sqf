@@ -16,6 +16,6 @@ private _missionInfo = [
 ];
 
 private _startResult = "potato_aar_extension" callExtension "startup";
-private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, [EVENT_MISSION_START, CBA_missionTime, [_information, _missionInfo]]]];
+private _result = "potato_aar_extension" callExtension ["processData", [GAME_EVENT, nil, [EVENT_MISSION_START, CBA_missionTime, [_missionInfo, _information]]]];
 TRACE_2("started mission",_startResult,_result);
 

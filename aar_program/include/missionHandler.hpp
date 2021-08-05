@@ -16,6 +16,9 @@
 class dataServer;
 class missionHandler {
     private:
+        dataServer &m_server;
+        int m_eventHandlerHandle = -1;
+
         std::string m_missionDate = "";
         double m_missionEnd = 0.0;
 
@@ -31,7 +34,7 @@ class missionHandler {
 
         std::thread m_dumpThread;
         bool m_readyToDump = false;
-        bool m_complete = false;
+        bool m_readyToDelete = false;
 
         void dumpToDisk();
 
@@ -41,12 +44,16 @@ class missionHandler {
         void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
 
     public:
-        missionHandler(dataServer &server);
+        missionHandler(dataServer &server, eventData &startEvent);
         ~missionHandler();
 
-        void drawInfo(float appWidth, float appHeight);
+        void drawInfo() const;
+        void update();
 
         void dump();
-        bool complete() const;
+        bool readyToDump() const;
+        bool readyToDelete() const;
+
+        std::string getMissionName() const;
 
 };

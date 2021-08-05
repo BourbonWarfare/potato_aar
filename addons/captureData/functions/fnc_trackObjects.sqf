@@ -7,6 +7,8 @@
  * [] call potato_aar_captureData_fnc_trackObjects
  */
 
+if (isGamePaused || accTime == 0) exitWith {};
+
 private _packets = [];
 {
     private _objectInfo = [

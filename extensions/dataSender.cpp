@@ -14,7 +14,7 @@ void dataSender::send() {
         // wait until we have data. When we do, lock the buffer and swap. Then process data
         std::unique_lock<std::mutex> lock(m_swapMutex);
         m_sendBufferLock.wait(lock, [this]{ return m_newData || !m_running; });
-        if (!m_running)
+        if (!m_running && !m_newData)
             {
                 return;
             }

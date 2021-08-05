@@ -11,6 +11,8 @@ GVAR(trackingProjectiles) = GVAR(trackingProjectiles) select {
     alive (_x select 0);
 };
 
+if (isGamePaused || accTime == 0) exitWith {};
+
 private _packets = [];
 {
     _x params ["_projectile", "_projectileUID"];

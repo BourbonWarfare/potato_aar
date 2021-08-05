@@ -2,7 +2,7 @@
 #include "dataServer.hpp"
 #include "spdlog/spdlog.h"
 
-#include "missionHandler.hpp"
+#include "serverObserver.hpp"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -23,7 +23,7 @@ int main() {
     dataServer server;
     server.subscribe(potato::packetTypes::DEBUG_MESSAGE, logPacket);
 
-    missionHandler mission(server);
+    serverObserver observer(server);
 
     glfwInit();
 
@@ -42,7 +42,9 @@ int main() {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     while (!glfwWindowShouldClose(app)) {
-        glfwWaitEvents();
+        glfwPollEvents();
+
+        observer.update();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -50,7 +52,7 @@ int main() {
 
         int width, height;
         glfwGetWindowSize(app, &width, &height);
-        mission.drawInfo(static_cast<float>(width), static_cast<float>(height));
+        observer.drawInfo(static_cast<float>(width), static_cast<float>(height));
 
         ImGui::Render();
         int display_w, display_h;
