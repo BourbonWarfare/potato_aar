@@ -15,7 +15,13 @@ class eventSubscriber {
         using variableType = const std::vector<std::unique_ptr<potato::baseARMAVariable>>&;
         using eventSignature = std::function<void(variableType)>;
 
-        std::unordered_map<potato::packetTypes, std::vector<eventSignature>> m_eventHandlers;
+        struct eventCallback {
+            int m_uid = 0;
+            eventSignature m_callback;
+        };
+        int m_globalIDs = 0;
+
+        std::unordered_map<potato::packetTypes, std::vector<eventCallback>> m_eventHandlers;
 
     protected:
         // Signals event. Runs through m_eventHandlers and calls each function
