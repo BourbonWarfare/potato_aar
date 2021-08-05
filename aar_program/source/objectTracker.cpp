@@ -100,6 +100,10 @@ void objectTracker::logEvent(const std::vector<std::unique_ptr<potato::baseARMAV
         case armaEvents::OBJECT_GET_OUT:
             getOut(event);
             break;
+        case armaEvents::MISSION_END:
+            m_server.unsubscribe(potato::packetTypes::GAME_EVENT, m_eventID);
+            m_server.unsubscribe(potato::packetTypes::UPDATE_OBJECT, m_updateID);
+            break;
         default:
             break;
     }

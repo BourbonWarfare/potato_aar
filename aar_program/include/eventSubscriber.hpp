@@ -17,6 +17,7 @@ class eventSubscriber {
 
         struct eventCallback {
             int m_uid = 0;
+            bool m_active = true;
             eventSignature m_callback;
         };
         int m_globalIDs = 0;
@@ -25,7 +26,7 @@ class eventSubscriber {
 
     protected:
         // Signals event. Runs through m_eventHandlers and calls each function
-        void signal(potato::packetTypes packetType, variableType dataFromPacket) const;
+        void signal(potato::packetTypes packetType, variableType dataFromPacket);
 
     public:
         // Subscribe a function to be called when we receive a packet of type

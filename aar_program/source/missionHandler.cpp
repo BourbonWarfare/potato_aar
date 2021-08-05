@@ -78,6 +78,8 @@ void missionHandler::onStart(eventData &event) {
 
     strftime(buffer, sizeof(buffer), "%d%m%y %H%M%S", timeinfo);
     m_missionDate = buffer;
+
+    m_eventHandlerHandle = m_server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&missionHandler::logEvent, this, std::placeholders::_1));
 }
 
 void missionHandler::onEnd(eventData &event) {
@@ -105,7 +107,6 @@ missionHandler::missionHandler(dataServer &server, eventData &startEvent) :
     m_objectHandler(server),
     m_projectileHandler(server)
 {
-    m_eventHandlerHandle = m_server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&missionHandler::logEvent, this, std::placeholders::_1));
     onStart(startEvent);
 }
 

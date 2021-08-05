@@ -6,6 +6,9 @@
 
 void eventProcessor::logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
     m_eventQueue.emplace_back(variables);
+    if (m_eventQueue.back().type == armaEvents::MISSION_END) {
+        m_server.unsubscribe(potato::packetTypes::GAME_EVENT, m_eventID);
+    }
 }
 
 eventProcessor::eventProcessor(dataServer &server) :

@@ -32,6 +32,9 @@ void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseA
         m_projectiles[uid].push_back(newProjectile);
 
         m_activeProjectiles[uid] = m_tick;
+    } else if (event.type == armaEvents::MISSION_END) {
+        m_server.unsubscribe(potato::packetTypes::GAME_EVENT, m_eventID);
+        m_server.unsubscribe(potato::packetTypes::UPDATE_PROJECTILE, m_updateProjectileID);
     }
 }
 
