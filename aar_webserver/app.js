@@ -4,6 +4,10 @@ var path = require('path');
 var adaro = require('adaro');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var AdmZip = require('adm-zip');
+var BSON = require('bson');
+const WebSocket = require('ws');
+const uuid = require('uuid');
 
 var indexRouter = require('./routes/index');
 
@@ -39,3 +43,66 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+
+var zip = new AdmZip('./test.zip');
+const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
+const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
+
+var last = Date.now();
+var accumulator = 0;
+
+const timestep = 1 / 5;
+
+var clients = new Map();
+function Client(ws, uid) {
+  this.socket = ws;
+  this.currentEvent = 0;
+  this.timeConnected = Date.now();
+
+  this.send = function(type, json) {
+    const packet = {
+      type: type,
+      data: json
+    };
+    this.socket.send(JSON.stringify(packet));
+  }
+};
+
+const wss = new WebSocket.Server({ port: 8082 });
+wss.on('connection', ws => {
+  ws.id = uuid.v4();
+
+  thisClient = new Client(ws);
+  clients.set(ws.id, thisClient);
+
+  console.log(ws.id);
+
+  thisClient.send('init', metaInfo);
+
+  ws.on('close', () => {
+    console.log("client has disconnected");
+    clients.delete(ws.id);
+  });
+});
+
+const a = function() {
+  var current = Date.now();
+  var delta = (current - last) / 1000;
+  last = current;
+
+  accumulator += delta;
+  while (accumulator >= timestep) {
+    accumulator -= timestep;
+    clients.forEach(client => {
+      const clientRunTime = (Date.now() - client.timeConnected) / 1000;
+
+      while (client.currentEvent < eventQueue.length && eventQueue[client.currentEvent].time <= clientRunTime) {
+        client.send('event', eventQueue[client.currentEvent]);
+        client.currentEvent += 1;
+      }
+    });
+  }
+
+  setImmediate(a);
+}
+a();

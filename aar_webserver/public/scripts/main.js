@@ -1,7 +1,8 @@
 // main.js
 // entry point for web page. Initialised WebGL layer and gets ready to render
+import { Circle, Quad } from './modules/shapes.js';
 
-const vsSource = 'attribute vec4 aVertexPosition; uniform mat4 uModelViewMatrix; uniform mat4 uProjectionMatrix; void main() { gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition; }';
+const vsSource = 'attribute vec4 aVertexPosition; uniform mat4 uModelMatrix; uniform mat4 uViewMatrix; uniform mat4 uProjectionMatrix; void main() { gl_Position = uProjectionMatrix * uModelMatrix * uViewMatrix * aVertexPosition; }';
 const fragSource = 'void main() { gl_FragColor = vec4(1.0); }';
 
 // Initialise shader program to draw data
@@ -38,27 +39,6 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
-function Quad(extents) {
-    const positions = [
-        0, 0,
-        extents[0], 0,
-        extents[0], extents[1],
-        0, extents[1]
-    ];
-    return positions;
-}
-
-function Circle(radius, segments) {
-    let positions = [];
-    let angleIncrement = 2 * Math.PI / segments;
-    for (let i = 0; i < 2 * Math.PI; i += angleIncrement) {
-        positions.push(0, 0);
-        positions.push(radius * Math.cos(i), radius * Math.sin(i));
-        positions.push(radius * Math.cos(i + angleIncrement), radius * Math.sin(i + angleIncrement));
-    }
-    return positions;
-}
-
 function drawScene(gl, programInfo, renderObjects) {
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -71,16 +51,29 @@ function drawScene(gl, programInfo, renderObjects) {
         -1, 1
     );
 
+    const viewMatrix = mat4.create();
+    mat4.translate(
+        viewMatrix,
+        viewMatrix,
+        [0, 0, 0]
+    );
+
+    mat4.scale(
+        viewMatrix,
+        viewMatrix,
+        [1, 1, 1]
+    );
+
     for (const renderObject of renderObjects) {
-        const modelViewMatrix = mat4.create();
+        const modelMatrix = mat4.create();
         mat4.translate(
-            modelViewMatrix,
-            modelViewMatrix,
+            modelMatrix,
+            modelMatrix,
             [renderObject.position[0], renderObject.position[1], 0]
         );
         mat4.rotate(
-            modelViewMatrix,
-            modelViewMatrix,
+            modelMatrix,
+            modelMatrix,
             renderObject.rotation,
             [0, 0, 1]
         );
@@ -114,9 +107,14 @@ function drawScene(gl, programInfo, renderObjects) {
             projectionMatrix
         );
         gl.uniformMatrix4fv(
-            programInfo.uniformLocations.modelViewMatrix,
+            programInfo.uniformLocations.viewMatrix,
             false,
-            modelViewMatrix
+            viewMatrix
+        );
+        gl.uniformMatrix4fv(
+            programInfo.uniformLocations.modelMatrix,
+            false,
+            modelMatrix
         );
 
         {
@@ -137,6 +135,56 @@ function RenderObject(gl, shape) {
     this.vertexCount = shape.length;
 }
 
+function Projectile(gl, eventArguments) {
+    this.renderObject = new RenderObject(gl, Circle(1, 15));
+    this.position = JSON.parse(eventArguments[1]);
+    this.velocity = JSON.parse(eventArguments[2]);
+
+    this.update = function(deltaTime) {
+        this.position[0] += this.velocity[0] * deltaTime;
+        this.position[1] += this.velocity[1] * deltaTime;
+    }
+
+    this.draw = function(mapScale) {
+        this.renderObject.position = [
+            this.position[0] * mapScale[0],
+            this.position[1] * mapScale[1]
+        ];
+        return this.renderObject;
+    };
+}
+
+function GameObject(gl, eventArguments) {
+    this.renderObject = new RenderObject(gl, Quad([5, 5]));
+    this.position = JSON.parse(eventArguments[2]);
+    this.name = JSON.parse(eventArguments[3]);
+
+    this.update = function(deltaTime) {
+        
+    }
+
+    this.draw = function(mapScale) {
+        this.renderObject.position = [
+            this.position[0] * mapScale[0],
+            this.position[1] * mapScale[1]
+        ];
+        return this.renderObject;
+    }
+}
+
+function Marker(gl, eventArguments) {
+    this.renderObject = new RenderObject(gl, Circle(5, 5));
+    this.position = JSON.parse(eventArguments[6]);
+
+    this.draw = function(mapScale) {
+        this.renderObject.position = [
+            this.position[0] * mapScale[0],
+            this.position[1] * mapScale[1]
+        ];
+        return this.renderObject;
+    };
+}
+
 function main() {
     const canvas = document.querySelector("#glCanvas");
     const gl = canvas.getContext("webgl");
@@ -155,12 +203,63 @@ function main() {
         },
         uniformLocations: {
             projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-            modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix')
+            viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+            modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix')
         }
     };
 
-    var r0 = new RenderObject(gl, Circle(50, 20));
-    r0.position = [100, 100];
+    var projectiles = new Map();
+    var gameObjects = new Map();
+    var markers = new Map();
+
+    var mapScale = [0, 0];
+
+    const ws = new WebSocket("ws://localhost:8082");
+    ws.addEventListener("open", () => {
+        console.log("conneced to websocket!");
+
+        ws.addEventListener('message', ({ data: incomingData }) => {
+            const packet = JSON.parse(incomingData);
+
+            switch (packet.type) {
+                case 'init':
+                    {
+                        mapScale = [
+                            640 / packet.data.mapSize,
+                            480 / packet.data.mapSize
+                        ];
+                    }
+                    break;
+                case 'event':
+                    {
+                        const uid = JSON.parse(packet.data.arguments[0]);
+                        switch (packet.data.type) {
+                            case "Object Created":
+                                gameObjects.set(
+                                    uid,
+                                    new GameObject(gl, packet.data.arguments)
+                                );
+                                break;
+                            case "Marker Created":
+                                markers.set(
+                                    uid,
+                                    new Marker(gl, packet.data.arguments)
+                                );
+                                break;
+                            case "Marker Updated":
+                                break;
+                            case "Fired":
+                                projectiles.set(
+                                    uid,
+                                    new Projectile(gl, packet.data.arguments)
+                                );
+                                break;
+                        };
+                    }
+                    break;
+            }
+        });
+    });
 
     var then = 0;
     function render(now) {
@@ -168,10 +267,26 @@ function main() {
         const deltaTime = now - then;
         then = now;
 
-        drawScene(gl, programInfo, [r0]);
+        var objectsToRender = [];
+        projectiles.forEach(projectile => {
+            projectile.update(deltaTime);
+            objectsToRender.push(projectile.draw(mapScale));
+        });
+
+        gameObjects.forEach(gameObject => {
+            objectsToRender.push(gameObject.draw(mapScale));
+        });
+
+        markers.forEach(marker => {
+            objectsToRender.push(marker.draw(mapScale));
+        });
+
+        drawScene(gl, programInfo, objectsToRender);
 
         requestAnimationFrame(render);
     };
 
     requestAnimationFrame(render)
 }
+
+export default main;

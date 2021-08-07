@@ -7,6 +7,7 @@
             integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
             crossorigin="anonymous" defer>
     </script>
-  <script src="/scripts/main.js"></script>
-  <script>window.onload = main;</script>
+
+  <script type="module" src="/scripts/main.js"></script>
+  <script type="module">import main from './scripts/main.js'; window.onload = main;</script>
 </html>
