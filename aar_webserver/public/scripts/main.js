@@ -288,20 +288,21 @@ function GameObject(gl, eventArguments) {
     this.timeOffset = 0;
 
     this.update = function(deltaTime) {
-        if (this.futurePositions.length == 0) { return; }
+        if (this.futurePositions.length <= 2) { return; }
         let desiredPosition = this.futurePositions[0].position;
         let desiredTime = this.futurePositions[0].time - this.timeOffset;
 
         this.currentInterpolationTime += deltaTime;
+        const leftToGo = this.currentInterpolationTime / desiredTime;
 
         // lerp between known states
-        this.position[0] = this.interpolationBeginPosition[0] + this.currentInterpolationTime / desiredTime * (desiredPosition[0] - this.interpolationBeginPosition[0]);
-        this.position[1] = this.interpolationBeginPosition[1] + this.currentInterpolationTime / desiredTime * (desiredPosition[1] - this.interpolationBeginPosition[1]);
+        this.position[0] = this.interpolationBeginPosition[0] + leftToGo * (desiredPosition[0] - this.interpolationBeginPosition[0]);
+        this.position[1] = this.interpolationBeginPosition[1] + leftToGo * (desiredPosition[1] - this.interpolationBeginPosition[1]);
 
-        if (desiredTime - this.currentInterpolationTime <= 0) {
+        if (leftToGo >= 1) {
             this.interpolationBeginPosition = desiredPosition;
+            this.timeOffset += desiredTime;
             this.currentInterpolationTime = 0;
-            this.timeOffset = desiredTime;
             this.futurePositions.shift();
         }
     }
