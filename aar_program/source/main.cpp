@@ -58,7 +58,11 @@ int main() {
 
         int width, height;
         glfwGetWindowSize(app, &width, &height);
-        observer.drawInfo(static_cast<float>(width), static_cast<float>(height));
+        try {
+            observer.drawInfo(static_cast<float>(width), static_cast<float>(height));
+        } catch (std::exception &e) {
+            spdlog::error("Draw error - {}", e.what());
+        }
 
         ImGui::Render();
         int display_w, display_h;
