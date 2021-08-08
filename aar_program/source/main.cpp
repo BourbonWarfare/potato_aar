@@ -4,11 +4,14 @@
 
 #include "serverObserver.hpp"
 
+//#define HAS_GUI
+#ifdef HAS_GUI
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#endif
 
 void logPacket(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
     spdlog::info("debug message");
@@ -31,6 +34,9 @@ int main() {
 
     serverObserver observer(server);
 
+    bool running = true;
+
+#ifdef HAS_GUI
     glfwInit();
 
     GLFWwindow *app = glfwCreateWindow(640, 480, "AAR Server", nullptr, nullptr);
@@ -46,12 +52,16 @@ int main() {
     ImGui_ImplOpenGL3_Init("#version 130");
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+#endif
 
-    while (!glfwWindowShouldClose(app)) {
+    while (running) {
+#ifdef HAS_GUI
         glfwPollEvents();
+#endif
 
         observer.update();
 
+#ifdef HAS_GUI
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -73,14 +83,19 @@ int main() {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(app);
+
+        running = !glfwWindowShouldClose(app);
+#endif
     }
 
+#ifdef HAS_GUI
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
     glfwDestroyWindow(app);
     glfwTerminate();
+#endif
 
     return 0;
 }
