@@ -2,7 +2,7 @@
 // entry point for web page. Initialised WebGL layer and gets ready to render
 import { Circle, Quad } from './modules/shapes.js';
 
-const vsSource = 'attribute vec4 aVertexPosition; uniform mat4 uModelMatrix; uniform mat4 uViewMatrix; uniform mat4 uProjectionMatrix; void main() { gl_Position = uProjectionMatrix * uModelMatrix * uViewMatrix * aVertexPosition; }';
+const vsSource = 'attribute vec4 aVertexPosition; uniform mat4 uModelMatrix; uniform mat4 uViewMatrix; uniform mat4 uProjectionMatrix; void main() { mat4 mvp = uProjectionMatrix * uViewMatrix * uModelMatrix; gl_Position = mvp * aVertexPosition; }';
 const fragSource = 'void main() { gl_FragColor = vec4(1.0); }';
 
 // Initialise shader program to draw data
@@ -39,43 +39,37 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
-function drawScene(gl, programInfo, renderObjects) {
+function drawScene(gl, camera, worldSize, programInfo, renderObjects) {
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    const projectionMatrix = mat4.create();
-    mat4.ortho(
-        projectionMatrix,
-        0, 640,
-        0, 480,
+    const projectionMatrix = mat4.ortho(
+        mat4.create(),
+        0, camera.size[0],
+        0, camera.size[1],
         -1, 1
     );
 
-    const viewMatrix = mat4.create();
+    const viewMatrix = mat4.fromRotationTranslationScaleOrigin(
+        mat4.create(),
+        quat.fromEuler(quat.create(), 0, 0, 0),
+        [-camera.position[0] * camera.zoom, -camera.position[1] * camera.zoom, 0],
+        [camera.zoom, camera.zoom, 1],
+        [camera.size[0] / 2, camera.size[1] / 2, 0]
+    );
     mat4.translate(
         viewMatrix,
         viewMatrix,
-        [0, 0, 0]
-    );
-
-    mat4.scale(
-        viewMatrix,
-        viewMatrix,
-        [1, 1, 1]
+        [camera.size[0] / 2, camera.size[1] / 2, 0]
     );
 
     for (const renderObject of renderObjects) {
-        const modelMatrix = mat4.create();
-        mat4.translate(
-            modelMatrix,
-            modelMatrix,
-            [renderObject.position[0], renderObject.position[1], 0]
-        );
-        mat4.rotate(
-            modelMatrix,
-            modelMatrix,
-            renderObject.rotation,
-            [0, 0, 1]
+        const modelMatrix = mat4.fromRotationTranslationScaleOrigin(
+            mat4.create(),
+            quat.fromEuler(quat.create(), 0, 0, renderObject.rotation),
+            [renderObject.position[0], renderObject.position[1], 0],
+            [1, 1, 1],
+            [renderObject.origin[0], renderObject.origin[1], 0]
         );
 
         {
@@ -124,9 +118,81 @@ function drawScene(gl, programInfo, renderObjects) {
     }
 }
 
+function Camera(size, workingElement) {
+    this.position = [0, 0];
+    this.zoom = 1;
+    this.size = size;
+
+    this.minZoom = 0.05;
+    this.maxZoom = 50;
+
+    this.clicked = false;
+    this.clickPosition = [0, 0];
+    this.positionBeforeMove = [0, 0];
+
+    workingElement.addEventListener('mousedown', e => {
+        let rect = e.target.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        this.clickPosition = [x, y];
+        this.positionBeforeMove = this.position;
+        this.clicked = true;
+    });
+
+    workingElement.addEventListener('mouseup', e => {
+        this.clicked = false;
+    });
+
+    workingElement.addEventListener('mousemove', e => {
+        if (!this.clicked) { return; }
+
+        let rect = e.target.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        let offset = [
+            x - this.clickPosition[0],
+            y - this.clickPosition[1]
+        ];
+
+        this.position = [
+            this.positionBeforeMove[0] - offset[0] * 2 / this.zoom,
+            this.positionBeforeMove[1] + offset[1] * 1.5 / this.zoom
+        ];
+    });
+
+    workingElement.addEventListener('wheel', e => {
+        e.preventDefault();
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const mid = (this.maxZoom + this.minZoom) / 2;
+
+        const zoomSpeed = 1;
+        const currentZoom = this.zoom;
+
+        const a = currentZoom / mid - 1;
+
+        const zoomIncrement = Math.sqrt(zoomSpeed - a * a);
+        this.zoom += zoomIncrement * Math.sign(e.wheelDeltaY);
+        this.zoom = Math.max(this.minZoom, Math.min(this.zoom, this.maxZoom));
+    });
+}
+
 function RenderObject(gl, shape) {
     this.position = [0, 0];
     this.rotation = 0;
+    this.origin = [0, 0];
+    
+    let pointCount = shape.length / 2;
+    for (let i = 0; i < shape.length; i += 2) {
+        this.origin[0] += shape[i + 0];
+        this.origin[1] += shape[i + 1];
+    }
+    this.origin[0] /= pointCount;
+    this.origin[1] /= pointCount;
 
     this.vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -136,7 +202,7 @@ function RenderObject(gl, shape) {
 }
 
 function Projectile(gl, eventArguments) {
-    this.renderObject = new RenderObject(gl, Circle(1, 15));
+    this.renderObject = new RenderObject(gl, Circle(0.5, 15));
     this.position = JSON.parse(eventArguments[1]);
     this.velocity = JSON.parse(eventArguments[2]);
 
@@ -145,17 +211,14 @@ function Projectile(gl, eventArguments) {
         this.position[1] += this.velocity[1] * deltaTime;
     }
 
-    this.draw = function(mapScale) {
-        this.renderObject.position = [
-            this.position[0] * mapScale[0],
-            this.position[1] * mapScale[1]
-        ];
+    this.draw = function() {
+        this.renderObject.position = this.position;
         return this.renderObject;
     };
 }
 
 function GameObject(gl, eventArguments) {
-    this.renderObject = new RenderObject(gl, Quad([5, 5]));
+    this.renderObject = new RenderObject(gl, Quad([1, 1]));
     this.position = JSON.parse(eventArguments[2]);
     this.name = JSON.parse(eventArguments[3]);
 
@@ -163,11 +226,8 @@ function GameObject(gl, eventArguments) {
         
     }
 
-    this.draw = function(mapScale) {
-        this.renderObject.position = [
-            this.position[0] * mapScale[0],
-            this.position[1] * mapScale[1]
-        ];
+    this.draw = function() {
+        this.renderObject.position = this.position;
         return this.renderObject;
     }
 }
@@ -176,11 +236,8 @@ function Marker(gl, eventArguments) {
     this.renderObject = new RenderObject(gl, Circle(5, 5));
     this.position = JSON.parse(eventArguments[6]);
 
-    this.draw = function(mapScale) {
-        this.renderObject.position = [
-            this.position[0] * mapScale[0],
-            this.position[1] * mapScale[1]
-        ];
+    this.draw = function() {
+        this.renderObject.position = this.position;
         return this.renderObject;
     };
 }
@@ -212,7 +269,10 @@ function main() {
     var gameObjects = new Map();
     var markers = new Map();
 
-    var mapScale = [0, 0];
+    var camera = new Camera([1280, 720], canvas);
+    camera.position = [14393, 15939];
+
+    var worldSize = 0;
 
     const ws = new WebSocket("ws://localhost:8082");
     ws.addEventListener("open", () => {
@@ -224,10 +284,7 @@ function main() {
             switch (packet.type) {
                 case 'init':
                     {
-                        mapScale = [
-                            640 / packet.data.mapSize,
-                            480 / packet.data.mapSize
-                        ];
+                        worldSize = packet.data.mapSize;
                     }
                     break;
                 case 'event':
@@ -239,6 +296,7 @@ function main() {
                                     uid,
                                     new GameObject(gl, packet.data.arguments)
                                 );
+                                console.log(packet.data.arguments);
                                 break;
                             case "Marker Created":
                                 markers.set(
@@ -260,7 +318,7 @@ function main() {
             }
         });
     });
-
+    
     var then = 0;
     function render(now) {
         now *= 0.001;
@@ -270,18 +328,18 @@ function main() {
         var objectsToRender = [];
         projectiles.forEach(projectile => {
             projectile.update(deltaTime);
-            objectsToRender.push(projectile.draw(mapScale));
+            objectsToRender.push(projectile.draw());
         });
 
         gameObjects.forEach(gameObject => {
-            objectsToRender.push(gameObject.draw(mapScale));
+            objectsToRender.push(gameObject.draw());
         });
 
         markers.forEach(marker => {
-            objectsToRender.push(marker.draw(mapScale));
+            objectsToRender.push(marker.draw());
         });
-
-        drawScene(gl, programInfo, objectsToRender);
+        
+        drawScene(gl, camera, worldSize, programInfo, objectsToRender);
 
         requestAnimationFrame(render);
     };
