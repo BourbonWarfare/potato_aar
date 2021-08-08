@@ -44,20 +44,46 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-var zip = new AdmZip('./test.zip');
+const zip = new AdmZip('./forest_ambush2.zip');
 const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
 const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
+
+var missionObjectsStates = new Map();
 
 var last = Date.now();
 var accumulator = 0;
 
 const timestep = 1 / 5;
 
+function GameObject(uid) {
+  this.uid = uid;
+  this.overview = BSON.deserialize(zip.getEntry(`${uid.replace(':', '_')}.bson`).getData());
+  this.states = this.overview.generalStates;
+  this.currentStateIndex = 0;
+
+  this.getLatestState = function(time) {
+    while (time >= this.states[this.currentStateIndex].time) {
+      this.currentStateIndex += 1;
+      if (this.currentStateIndex >= this.states.length) {
+        this.currentStateIndex = this.states.length - 1;
+        break;
+      }
+    }
+    return this.states[this.currentStateIndex];
+  }
+
+  this.isNewState = function(time) {
+    return time >= this.states[this.currentStateIndex].time
+  }
+}
+
 var clients = new Map();
 function Client(ws, uid) {
   this.socket = ws;
   this.currentEvent = 0;
   this.timeConnected = Date.now();
+  this.activeObjects = new Map();
+  this.activeProjectiles = new Map();
 
   this.send = function(type, json) {
     const packet = {
@@ -65,6 +91,14 @@ function Client(ws, uid) {
       data: json
     };
     this.socket.send(JSON.stringify(packet));
+  }
+
+  this.addObjectToTrack = function(event) {
+    let uid = JSON.parse(event.arguments[0]);
+    if (!missionObjectsStates.has(uid)) {
+      missionObjectsStates.set(uid, new GameObject(uid));
+    }
+    this.activeObjects.set(uid, missionObjectsStates.get(uid));
   }
 };
 
@@ -85,9 +119,9 @@ wss.on('connection', ws => {
   });
 });
 
-const a = function() {
-  var current = Date.now();
-  var delta = (current - last) / 1000;
+const update = function() {
+  let current = Date.now();
+  let delta = (current - last) / 1000;
   last = current;
 
   accumulator += delta;
@@ -95,14 +129,38 @@ const a = function() {
     accumulator -= timestep;
     clients.forEach(client => {
       const clientRunTime = (Date.now() - client.timeConnected) / 1000;
+      console.log(clientRunTime);
 
       while (client.currentEvent < eventQueue.length && eventQueue[client.currentEvent].time <= clientRunTime) {
-        client.send('event', eventQueue[client.currentEvent]);
+        let frontEvent = eventQueue[client.currentEvent];
+        
+        switch (frontEvent.type) {
+          case "Object Created":
+            client.addObjectToTrack(frontEvent);
+            break;
+          case "Object Destroyed":
+            break;
+          default:
+            break;
+        }
+
+        client.send('event', frontEvent);
         client.currentEvent += 1;
       }
+
+      client.activeObjects.forEach(object => {
+        if (object.isNewState(clientRunTime)) {
+          const latestState = object.getLatestState(clientRunTime);
+          const update = {
+            object: object.uid,
+            state: latestState
+          };
+          client.send('object_update', update);
+        }
+      });
     });
   }
 
-  setImmediate(a);
+  setImmediate(update);
 }
-a();
+update();

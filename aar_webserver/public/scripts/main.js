@@ -2,8 +2,29 @@
 // entry point for web page. Initialised WebGL layer and gets ready to render
 import { Circle, Quad } from './modules/shapes.js';
 
-const vsSource = 'attribute vec4 aVertexPosition; uniform mat4 uModelMatrix; uniform mat4 uViewMatrix; uniform mat4 uProjectionMatrix; void main() { mat4 mvp = uProjectionMatrix * uViewMatrix * uModelMatrix; gl_Position = mvp * aVertexPosition; }';
-const fragSource = 'void main() { gl_FragColor = vec4(1.0); }';
+const vsSource = `
+    attribute vec2 aVertexPosition;
+    attribute vec3 aVertexColour;
+
+    uniform mat4 uModelMatrix;
+    uniform mat4 uViewMatrix;
+    uniform mat4 uProjectionMatrix;
+
+    varying lowp vec4 vColour;
+    
+    void main() {
+        mat4 mvp = uProjectionMatrix * uViewMatrix * uModelMatrix;
+        gl_Position = mvp * vec4(aVertexPosition, 0, 1); 
+        vColour = vec4(aVertexColour, 1);
+    }
+`;
+const fragSource = `
+    varying lowp vec4 vColour;
+
+    void main() {
+        gl_FragColor = vColour;
+    }
+`;
 
 // Initialise shader program to draw data
 function initShaderProgram(gl, vsSource, fsSource) {
@@ -77,7 +98,6 @@ function drawScene(gl, camera, worldSize, programInfo, renderObjects) {
             const type = gl.FLOAT;
             const normalise = false;
             const stride = 0;
-
             const offset = 0;
             gl.bindBuffer(gl.ARRAY_BUFFER, renderObject.vertexBuffer);
             gl.vertexAttribPointer(
@@ -92,6 +112,26 @@ function drawScene(gl, camera, worldSize, programInfo, renderObjects) {
                 programInfo.attribLocations.vertexPosition
             );
         }
+
+        {
+            const numComponents = 3;
+            const type = gl.FLOAT;
+            const normalize = false;
+            const stride = 0;
+            const offset = 0;
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderObject.colourBuffer);
+            gl.vertexAttribPointer(
+                programInfo.attribLocations.vertexColour,
+                numComponents,
+                type,
+                normalize,
+                stride,
+                offset
+            );
+            gl.enableVertexAttribArray(
+                programInfo.attribLocations.vertexColour
+            );
+          }
 
         gl.useProgram(programInfo.program);
 
@@ -167,7 +207,7 @@ function Camera(size, workingElement) {
 
     workingElement.addEventListener('wheel', e => {
         e.preventDefault();
-        
+
         const rect = e.target.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -185,11 +225,12 @@ function Camera(size, workingElement) {
     });
 }
 
-function RenderObject(gl, shape) {
+function RenderObject(gl, shape, colour = [1, 1, 1]) {
     this.position = [0, 0];
     this.rotation = 0;
     this.origin = [0, 0];
-    
+    this.vertexCount = shape.length;
+
     let pointCount = shape.length / 2;
     for (let i = 0; i < shape.length; i += 2) {
         this.origin[0] += shape[i + 0];
@@ -202,7 +243,19 @@ function RenderObject(gl, shape) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape), gl.STATIC_DRAW);
 
-    this.vertexCount = shape.length;
+    this.colourBuffer = gl.createBuffer();
+
+    this.setColour = function(colour) {
+        let colours = [];
+        for (let i = 0; i < this.vertexCount; i++) {
+            colours.push(colour[0], colour[1], colour[2]);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
+    }
+    
+    this.setColour(colour);
 }
 
 function Projectile(gl, eventArguments) {
@@ -226,8 +279,8 @@ function GameObject(gl, eventArguments) {
     this.position = JSON.parse(eventArguments[2]);
     this.name = JSON.parse(eventArguments[3]);
 
-    this.update = function(deltaTime) {
-        
+    this.updateFromPacket = function(state) {
+        this.position = state.position;
     }
 
     this.draw = function() {
@@ -260,7 +313,8 @@ function main() {
     const programInfo = {
         program: shaderProgram,
         attribLocations: {
-            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition')
+            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+            vertexColour: gl.getAttribLocation(shaderProgram, 'aVertexColour')
         },
         uniformLocations: {
             projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
@@ -274,7 +328,7 @@ function main() {
     var markers = new Map();
 
     var camera = new Camera([1280, 720], canvas);
-    camera.position = [14393, 15939];
+    camera.position = [8360, 19283];
 
     var worldSize = 0;
 
@@ -316,8 +370,22 @@ function main() {
                                     new Projectile(gl, packet.data.arguments)
                                 );
                                 break;
+                            case "Object Killed":
+                                if (gameObjects.has(uid)) {
+                                    console.log(packet.data, uid);
+                                    gameObjects.get(uid).renderObject.setColour([1, 0, 0]);
+                                }
+                                break;
+                            default:
+                                console.log(packet.data);
+                                break;
                         };
                     }
+                    break;
+                case 'object_update':
+                    gameObjects.get(packet.data.object).updateFromPacket(packet.data.state);
+                    break;
+                default:
                     break;
             }
         });
