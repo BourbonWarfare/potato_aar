@@ -131,9 +131,9 @@ function Camera(size, workingElement) {
     this.positionBeforeMove = [0, 0];
 
     workingElement.addEventListener('mousedown', e => {
-        let rect = e.target.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
 
         this.clickPosition = [x, y];
         this.positionBeforeMove = this.position;
@@ -147,23 +147,27 @@ function Camera(size, workingElement) {
     workingElement.addEventListener('mousemove', e => {
         if (!this.clicked) { return; }
 
-        let rect = e.target.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
 
-        let offset = [
+        const offset = [
             x - this.clickPosition[0],
             y - this.clickPosition[1]
         ];
 
+        const sizeModifierX = this.size[0] / rect.width;
+        const sizeModifierY = this.size[1] / rect.height;
+
         this.position = [
-            this.positionBeforeMove[0] - offset[0] * 2 / this.zoom,
-            this.positionBeforeMove[1] + offset[1] * 1.5 / this.zoom
+            this.positionBeforeMove[0] - offset[0] * sizeModifierX / this.zoom,
+            this.positionBeforeMove[1] + offset[1] * sizeModifierY / this.zoom
         ];
     });
 
     workingElement.addEventListener('wheel', e => {
         e.preventDefault();
+        
         const rect = e.target.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
