@@ -24,9 +24,11 @@ void serverObserver::logEvent(const std::vector<std::unique_ptr<potato::baseARMA
         case armaEvents::MISSION_LOAD:
             startMission(event);
             spdlog::info("Mission Load");
+            m_inMission = true;
             break;
         case armaEvents::MISSION_END:
             spdlog::info("Mission End");
+            m_inMission = false;
             break;
         default:
             break;
@@ -35,6 +37,7 @@ void serverObserver::logEvent(const std::vector<std::unique_ptr<potato::baseARMA
 
 void serverObserver::heartbeat(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
     m_heartbeatClock.restart();
+    spdlog::info("heartbeat");
 }
 
 serverObserver::serverObserver(dataServer &server) :
@@ -45,16 +48,20 @@ serverObserver::serverObserver(dataServer &server) :
 }
 
 void serverObserver::update() {
-    bool nonResponsive = m_heartbeatClock.getTime() > m_heartbeatRate * c_heartbeatTimeouts;
-    if (nonResponsive && !m_activeMissions.empty()) {
-        spdlog::error("ARMA is non-responsive! Dumping missions...");
+    bool nonResponsive = m_inMission && m_heartbeatClock.getTime() > m_heartbeatRate * c_heartbeatTimeouts;
+    if (nonResponsive) {
+        m_inMission = false;
+        if (!m_activeMissions.empty()) {
+            spdlog::error("ARMA is non-responsive! Dumping missions...");
+        }
     }
 
     m_activeMissionsMutex.lock();
     for (auto it = m_activeMissions.begin(); it != m_activeMissions.end(); it) {
         (*it)->update();
 
-        if (((*it)->readyToDump() && !(*it)->isDumping())|| nonResponsive) {
+        if (((*it)->readyToDump() && !(*it)->isDumping()) || nonResponsive) {
+            spdlog::info("Ready to dump: {} Is Dumping: {} Non Responsive: {}", (*it)->readyToDump(), (*it)->isDumping(), nonResponsive);
             (*it)->dump();
         }
 

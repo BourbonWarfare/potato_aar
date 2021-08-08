@@ -359,7 +359,7 @@ function main() {
     var markers = new Map();
 
     var camera = new Camera([1280, 720], canvas);
-    camera.position = [13869, 21429];
+    camera.position = [9863, 7893];
 
     var worldSize = 0;
 

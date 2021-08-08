@@ -44,7 +44,7 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-const zip = new AdmZip('./test.zip');
+const zip = new AdmZip('./08-08-21_03-22-40_Latofel_TVT35_Patrol_V2.zip');
 const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
 const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
 
@@ -151,6 +151,7 @@ const update = function() {
 
       while (client.currentEvent < eventQueue.length && eventQueue[client.currentEvent].time <= clientRunTime) {
         let frontEvent = eventQueue[client.currentEvent];
+        console.log(frontEvent.type);
         switch (frontEvent.type) {
           case "Object Created":
             client.addObjectToTrack(frontEvent);

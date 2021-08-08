@@ -15,6 +15,7 @@ class serverObserver {
         static constexpr int c_heartbeatTimeouts = 5;
         fe::time m_heartbeatRate;
         fe::clock m_heartbeatClock;
+        bool m_inMission = false;
 
         dataServer &m_server;
 

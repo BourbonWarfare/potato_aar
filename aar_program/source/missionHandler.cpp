@@ -1,7 +1,7 @@
 #include "missionHandler.hpp"
 #include "dataServer.hpp"
 #include "imgui.h"
-#include "spdlog/fmt/fmt.h"
+#include "spdlog/spdlog.h"
 
 #include <fstream>
 #include <filesystem>
@@ -10,6 +10,8 @@
 #include "zip.h"
 
 void missionHandler::dumpToDisk() const {
+    spdlog::info("dumping {} to disk", m_missionName);
+
     std::string missionName = m_missionName;
     missionName.erase(std::remove(missionName.begin(), missionName.end(), '\"'), missionName.end());
     if (missionName == "") {
@@ -78,6 +80,8 @@ void missionHandler::onStart(eventData &event) {
 }
 
 void missionHandler::onEnd(eventData &event) {
+    spdlog::info("End of mission - dumping to disk");
+
     m_missionEnd = event.eventTime;
     m_readyToDump = true;
 
