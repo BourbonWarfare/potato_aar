@@ -44,10 +44,11 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-const zip = new AdmZip('./forest_ambush2.zip');
+const zip = new AdmZip('./test.zip');
 const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
 const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
 
+const projectiles = BSON.deserialize(zip.getEntry('projectilesTeeny.bson').getData());
 var missionObjectsStates = new Map();
 
 var last = Date.now();
@@ -100,6 +101,11 @@ function Client(ws, uid) {
     }
     this.activeObjects.set(uid, missionObjectsStates.get(uid));
   }
+
+  this.removeObjectToTrack = function(event) {
+    let uid = JSON.parse(event.arguments[0]);
+    this.activeObjects.delete(uid);
+  }
 };
 
 const wss = new WebSocket.Server({ port: 8082 });
@@ -131,23 +137,6 @@ const update = function() {
       const clientRunTime = (Date.now() - client.timeConnected) / 1000;
       console.log(clientRunTime);
 
-      while (client.currentEvent < eventQueue.length && eventQueue[client.currentEvent].time <= clientRunTime) {
-        let frontEvent = eventQueue[client.currentEvent];
-        
-        switch (frontEvent.type) {
-          case "Object Created":
-            client.addObjectToTrack(frontEvent);
-            break;
-          case "Object Destroyed":
-            break;
-          default:
-            break;
-        }
-
-        client.send('event', frontEvent);
-        client.currentEvent += 1;
-      }
-
       client.activeObjects.forEach(object => {
         if (object.isNewState(clientRunTime)) {
           const latestState = object.getLatestState(clientRunTime);
@@ -158,6 +147,28 @@ const update = function() {
           client.send('object_update', update);
         }
       });
+
+      while (client.currentEvent < eventQueue.length && eventQueue[client.currentEvent].time <= clientRunTime) {
+        let frontEvent = eventQueue[client.currentEvent];
+        switch (frontEvent.type) {
+          case "Object Created":
+            client.addObjectToTrack(frontEvent);
+            break;
+          case "Object Killed":
+            client.removeObjectToTrack(frontEvent);
+            break;
+          case "Fired":
+            const uid = JSON.parse(frontEvent.arguments[0]);
+            frontEvent.metaInfo = {
+              lifetime: projectiles[uid.toString()].lifetime
+            };
+          default:
+            break;
+        }
+
+        client.send('event', frontEvent);
+        client.currentEvent += 1;
+      }
     });
   }
 

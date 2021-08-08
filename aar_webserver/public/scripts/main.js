@@ -258,10 +258,13 @@ function RenderObject(gl, shape, colour = [1, 1, 1]) {
     this.setColour(colour);
 }
 
-function Projectile(gl, eventArguments) {
-    this.renderObject = new RenderObject(gl, Circle(0.5, 15));
+function Projectile(gl, eventArguments, lifetime) {
+    this.renderObject = new RenderObject(gl, Circle(0.3, 15));
+    this.uid = JSON.parse(eventArguments[0]);
     this.position = JSON.parse(eventArguments[1]);
     this.velocity = JSON.parse(eventArguments[2]);
+    this.endTime = Date.now() * 0.001 + lifetime;
+    this.lifetime = lifetime;
 
     this.update = function(deltaTime) {
         this.position[0] += this.velocity[0] * deltaTime;
@@ -328,7 +331,7 @@ function main() {
     var markers = new Map();
 
     var camera = new Camera([1280, 720], canvas);
-    camera.position = [8360, 19283];
+    camera.position = [13869, 21429];
 
     var worldSize = 0;
 
@@ -367,12 +370,11 @@ function main() {
                             case "Fired":
                                 projectiles.set(
                                     uid,
-                                    new Projectile(gl, packet.data.arguments)
+                                    new Projectile(gl, packet.data.arguments, packet.data.metaInfo.lifetime)
                                 );
                                 break;
                             case "Object Killed":
                                 if (gameObjects.has(uid)) {
-                                    console.log(packet.data, uid);
                                     gameObjects.get(uid).renderObject.setColour([1, 0, 0]);
                                 }
                                 break;
@@ -396,11 +398,16 @@ function main() {
         now *= 0.001;
         const deltaTime = now - then;
         then = now;
-
+        
         var objectsToRender = [];
         projectiles.forEach(projectile => {
-            projectile.update(deltaTime);
-            objectsToRender.push(projectile.draw());
+            if (now >= projectile.endTime) {
+                projectiles.delete(projectile.uid);
+                console.log(Date.now(), projectile.endTime, projectile.lifetime);
+            } else {
+                projectile.update(deltaTime);
+                objectsToRender.push(projectile.draw());
+            }
         });
 
         gameObjects.forEach(gameObject => {

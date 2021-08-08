@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "spdlog/fmt/fmt.h"
 #include "nlohmann/json.hpp"
+#include "zip.h"
 #include <stack>
 
 void projectileTracker::logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables) {
@@ -99,7 +100,7 @@ void projectileTracker::drawInfo() const {
         if (ImGui::BeginTabBar("##ProjectileTabs")) {
             if (ImGui::BeginTabItem("All Projectiles")) {
                 for (auto &projectile : m_projectiles) {
-                    if (ImGui::TreeNode(reinterpret_cast<void*>(projectile.first), projectile.second.back().m_classname.c_str())) {
+                    if (!projectile.second.empty() && ImGui::TreeNode(reinterpret_cast<void*>(projectile.first), projectile.second.back().m_classname.c_str())) {
                         for (auto &variant : projectile.second) {
                             drawProjectileInfo(variant);
                         }
@@ -147,32 +148,76 @@ void projectileTracker::update()
         }
     }
 
-nlohmann::json projectileTracker::serialise() const {
-    nlohmann::json allProjectiles;
-    allProjectiles["count"] = m_projectiles.size();
-    for (auto &projectile : m_projectiles) {
-        std::vector<nlohmann::json> updateData;
-        for (auto &update : projectile.second) {
-            nlohmann::json updateJSON;
+void projectileTracker::serialise(struct zip_t *zip) const {
+    {
+        nlohmann::json teenyProjectiles;
+        teenyProjectiles["count"] = m_projectiles.size();
 
-            updateJSON["time"] = update.m_time;
-            updateJSON["position"] = {
-                update.m_positionX,
-                update.m_positionY,
-                update.m_positionZ
+        nlohmann::json allProjectiles;
+        allProjectiles["count"] = m_projectiles.size();
+        for (auto &projectile : m_projectiles) {
+            double start = projectile.second.front().m_time;
+            double end = projectile.second.back().m_time;
+            double lifetime = std::max(end - start, updateRate); // if the projectile has 0 recorded lifetime, just go with the smallest known value
+
+            const std::string uid = std::to_string(projectile.first);
+
+            teenyProjectiles[uid]["classname"] = projectile.second.front().m_classname;
+            teenyProjectiles[uid]["lifetime"] = lifetime;
+            teenyProjectiles[uid]["positionStart"] = {
+                projectile.second.front().m_positionX,
+                projectile.second.front().m_positionY,
+                projectile.second.front().m_positionZ,
+            };
+            teenyProjectiles[uid]["positionEnd"] = {
+                projectile.second.back().m_positionX,
+                projectile.second.back().m_positionY,
+                projectile.second.back().m_positionZ,
             };
 
-            updateJSON["velocity"] = {
-                update.m_velocityX,
-                update.m_velocityY,
-                update.m_velocityZ
+            teenyProjectiles[uid]["velocityStart"] = {
+                projectile.second.front().m_velocityX,
+                projectile.second.front().m_velocityY,
+                projectile.second.front().m_velocityZ,
+            };
+            teenyProjectiles[uid]["velocityEnd"] = {
+                projectile.second.back().m_velocityX,
+                projectile.second.back().m_velocityY,
+                projectile.second.back().m_velocityZ,
             };
 
-            updateData.push_back(updateJSON);
+            std::vector<nlohmann::json> updateData;
+            for (auto &update : projectile.second) {
+                nlohmann::json updateJSON;
+
+                updateJSON["time"] = update.m_time;
+                updateJSON["position"] = {
+                    update.m_positionX,
+                    update.m_positionY,
+                    update.m_positionZ
+                };
+
+                updateJSON["velocity"] = {
+                    update.m_velocityX,
+                    update.m_velocityY,
+                    update.m_velocityZ
+                };
+
+                updateData.push_back(updateJSON);
+            }
+            allProjectiles[uid]["updates"] = updateData;
+            allProjectiles[uid]["classname"] = projectile.second.back().m_classname;
         }
-        allProjectiles[std::to_string(projectile.first)]["updates"] = updateData;
-        allProjectiles[std::to_string(projectile.first)]["classname"] = projectile.second.back().m_classname;
+
+        std::vector<std::uint8_t> bsonTeeny = nlohmann::json::to_bson(teenyProjectiles);
+        zip_entry_open(zip, "projectilesTeeny.bson");
+        zip_entry_write(zip, bsonTeeny.data(), bsonTeeny.size());
+        zip_entry_close(zip);
+
+        std::vector<std::uint8_t> bson = nlohmann::json::to_bson(allProjectiles);
+        zip_entry_open(zip, "projectiles.bson");
+        zip_entry_write(zip, bson.data(), bson.size());
+        zip_entry_close(zip);
     }
 
-    return allProjectiles;
 }

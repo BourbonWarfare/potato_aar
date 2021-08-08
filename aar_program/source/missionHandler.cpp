@@ -30,6 +30,7 @@ void missionHandler::dumpToDisk() const {
         metaInfo["endTime"] = m_missionEnd;
         metaInfo["projectileUpdateRate"] = m_projectileUpdateRate;
         metaInfo["objectUpdateRate"] = m_objectUpdateRate;
+        metaInfo["version"] = 1;
 
         std::string metaInfoString = metaInfo.dump(4);
         zip_entry_write(zip, metaInfoString.c_str(), metaInfoString.size());
@@ -47,15 +48,7 @@ void missionHandler::dumpToDisk() const {
     }
 
     m_objectHandler.serialise(zip);
-
-    {
-        zip_entry_open(zip, "projectiles.bson");
-
-        std::vector<std::uint8_t> bson = nlohmann::json::to_bson(m_projectileHandler.serialise());
-        zip_entry_write(zip, bson.data(), bson.size());
-
-        zip_entry_close(zip);
-    }
+    m_projectileHandler.serialise(zip);
 
     zip_close(zip);
 }
@@ -69,14 +62,16 @@ void missionHandler::onStart(eventData &event) {
     metaInfo.data[3]->convert(m_objectUpdateRate);
     metaInfo.data[4]->convert(m_projectileUpdateRate);
 
+    m_projectileHandler.updateRate = m_projectileUpdateRate;
+
     time_t rawtime;
     struct tm *timeinfo;
-    char buffer[80];
+    char buffer[256];
 
     time(&rawtime);
     timeinfo = localtime(&rawtime);
 
-    strftime(buffer, sizeof(buffer), "%d%m%y %H%M%S", timeinfo);
+    strftime(buffer, sizeof(buffer), "%d-%m-%y_%H-%M-%S", timeinfo);
     m_missionDate = buffer;
 
     m_eventHandlerHandle = m_server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&missionHandler::logEvent, this, std::placeholders::_1));

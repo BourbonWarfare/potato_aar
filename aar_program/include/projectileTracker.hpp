@@ -31,6 +31,8 @@ class projectileTracker{
         std::unordered_map<unsigned int, unsigned int> m_activeProjectiles;
         std::unordered_map<unsigned int, std::deque<projectile>> m_projectiles;
 
+        double m_updateRate = 0.0;
+
         dataServer &m_server;
         int m_eventID = 0;
         int m_updateProjectileID = 0;
@@ -47,6 +49,8 @@ class projectileTracker{
         unsigned int m_tick = 0;
 
     public:
+        double updateRate = 0.0;
+
         projectileTracker(dataServer &server);
         ~projectileTracker();
 
@@ -54,6 +58,6 @@ class projectileTracker{
 
         void update();
 
-        nlohmann::json serialise() const;
+        void serialise(struct zip_t *zip) const;
 };
 
