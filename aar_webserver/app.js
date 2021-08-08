@@ -55,6 +55,7 @@ var last = Date.now();
 var accumulator = 0;
 
 const timestep = 1 / 5;
+const overallUpdateRate = 1/20;
 
 function GameObject(uid) {
   this.uid = uid;
@@ -172,6 +173,6 @@ const update = function() {
     });
   }
 
-  setImmediate(update);
+  setTimeout(update, overallUpdateRate);
 }
 update();

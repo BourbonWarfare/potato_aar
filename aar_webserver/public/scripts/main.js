@@ -282,8 +282,35 @@ function GameObject(gl, eventArguments) {
     this.position = JSON.parse(eventArguments[2]);
     this.name = JSON.parse(eventArguments[3]);
 
+    this.futurePositions = [];
+    this.currentInterpolationTime = 0;
+    this.interpolationBeginPosition = this.position;
+    this.timeOffset = 0;
+
+    this.update = function(deltaTime) {
+        if (this.futurePositions.length == 0) { return; }
+        let desiredPosition = this.futurePositions[0].position;
+        let desiredTime = this.futurePositions[0].time - this.timeOffset;
+
+        this.currentInterpolationTime += deltaTime;
+
+        // lerp between known states
+        this.position[0] = this.interpolationBeginPosition[0] + this.currentInterpolationTime / desiredTime * (desiredPosition[0] - this.interpolationBeginPosition[0]);
+        this.position[1] = this.interpolationBeginPosition[1] + this.currentInterpolationTime / desiredTime * (desiredPosition[1] - this.interpolationBeginPosition[1]);
+
+        if (desiredTime - this.currentInterpolationTime <= 0) {
+            this.interpolationBeginPosition = desiredPosition;
+            this.currentInterpolationTime = 0;
+            this.timeOffset = desiredTime;
+            this.futurePositions.shift();
+        }
+    }
+
     this.updateFromPacket = function(state) {
-        this.position = state.position;
+        this.futurePositions.push({
+            position: state.position,
+            time: state.time
+        });
     }
 
     this.draw = function() {
@@ -411,6 +438,7 @@ function main() {
         });
 
         gameObjects.forEach(gameObject => {
+            gameObject.update(deltaTime);
             objectsToRender.push(gameObject.draw());
         });
 
