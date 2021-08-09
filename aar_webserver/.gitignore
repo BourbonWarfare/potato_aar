@@ -62,3 +62,5 @@ typings/
 
 # public binary data
 public/maps
+*.zip
+*.svg
