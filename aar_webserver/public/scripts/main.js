@@ -103,20 +103,6 @@ function Marker(gl, eventArguments) {
 function main() {
     var testObject = null;
 
-    const oReq = new XMLHttpRequest();
-    oReq.addEventListener('load', function() {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(this.responseText, 'image/svg+xml');
-
-        const svg = parseSVGDoc(doc.getElementsByTagName('svg')[0]);
-
-        testObject = new RenderObject(gl, svg.vertices, svg.indices, svg.colours);
-
-        console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
-    });
-    oReq.open("GET", '/maps/Altis5.svg');
-    oReq.send();
-
     const canvas = document.querySelector("#glCanvas");
     const gl = canvas.getContext("webgl");
 
@@ -133,7 +119,22 @@ function main() {
     
     const shaderProgram = initShaderProgram(gl, vsSource, fragSource);
 
-    const programInfo = {
+    const objectInfo = {
+        program: shaderProgram,
+        primitiveType: gl.TRIANGLE_STRIP,
+        useIndexBuffer: false,
+        attribLocations: {
+            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+            vertexColour: gl.getAttribLocation(shaderProgram, 'aVertexColour')
+        },
+        uniformLocations: {
+            projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+            viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+            modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix')
+        }
+    }
+
+    const terrainInfo = {
         program: shaderProgram,
         primitiveType: gl.TRIANGLES,
         useIndexBuffer: true,
@@ -153,14 +154,13 @@ function main() {
     var markers = new Map();
 
     var camera = new Camera([1920, 1080], canvas);
-    camera.position = [10029, 5597];
+    camera.position = [14093, 21834];
 
     var worldSize = 0;
 
     const ws = new WebSocket("ws://localhost:8082");
     ws.addEventListener("open", () => {
         console.log("conneced to websocket!");
-        return;
 
         ws.addEventListener('message', ({ data: incomingData }) => {
             const packet = JSON.parse(incomingData);
@@ -169,6 +169,22 @@ function main() {
                 case 'init':
                     {
                         worldSize = packet.data.mapSize;
+                        const oReq = new XMLHttpRequest();
+                        oReq.addEventListener('load', function() {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(this.responseText, 'image/svg+xml');
+
+                            const svg = parseSVGDoc(doc.getElementsByTagName('svg')[0]);
+
+                            for (let i = 1; i < svg.vertices.length; i += 2) {
+                                svg.vertices[i] = worldSize - svg.vertices[i];
+                            }
+                            testObject = new RenderObject(gl, svg.vertices, svg.indices, svg.colours);
+
+                            console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
+                        });
+                        oReq.open("GET", '/maps/Altis5.svg');
+                        oReq.send();
                     }
                     break;
                 case 'event':
@@ -243,11 +259,13 @@ function main() {
             objectsToRender.push(marker.draw());
         });
 
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
         if (testObject != null) {
-            objectsToRender.push(testObject);
+            drawScene(gl, camera, terrainInfo, [testObject]);
         }
-        
-        drawScene(gl, camera, programInfo, objectsToRender);
+        drawScene(gl, camera, objectInfo, objectsToRender);
 
         requestAnimationFrame(render);
     };

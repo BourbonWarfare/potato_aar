@@ -36,9 +36,6 @@ function loadShader(gl, type, source) {
 }
 
 function drawScene(gl, camera, programInfo, renderObjects) {
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
     const projectionMatrix = mat4.ortho(
         mat4.create(),
         0, camera.size[0],
