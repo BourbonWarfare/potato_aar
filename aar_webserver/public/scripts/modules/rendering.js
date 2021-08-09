@@ -126,10 +126,51 @@ function drawScene(gl, camera, programInfo, renderObjects) {
             modelMatrix
         );
 
-        {
-            const offset = 0;
-            gl.drawArrays(gl.TRIANGLES, offset, renderObject.vertexCount);
+        if (!programInfo.useIndexBuffer) {
+            gl.drawArrays(programInfo.primitiveType, 0, renderObject.vertexCount);
+        } else {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, renderObject.indexBuffer);
+            gl.drawElements(programInfo.primitiveType, renderObject.indexCount, gl.UNSIGNED_INT, 0);
         }
+    }
+}
+
+
+function RenderObject(gl, shape, indices = [], colours = []) {
+    this.position = [0, 0];
+    this.rotation = 0;
+    this.origin = [0, 0];
+    this.vertexCount = shape.length;
+    this.indexCount = indices.length;
+
+    let pointCount = shape.length / 2;
+    for (let i = 0; i < shape.length; i += 2) {
+        this.origin[0] += shape[i + 0];
+        this.origin[1] += shape[i + 1];
+    }
+    this.origin[0] /= pointCount;
+    this.origin[1] /= pointCount;
+
+    this.vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape), gl.STATIC_DRAW);
+
+    this.colourBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
+
+    this.indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
+
+    this.setColour = function(colour) {
+        let colours = [];
+        for (let i = 0; i < this.vertexCount; i++) {
+            colours.push(colour[0], colour[1], colour[2]);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
     }
 }
 
@@ -198,39 +239,6 @@ function Camera(size, workingElement) {
         this.zoom += zoomIncrement * Math.sign(e.wheelDeltaY);
         this.zoom = Math.max(this.minZoom, Math.min(this.zoom, this.maxZoom));
     });
-}
-
-function RenderObject(gl, shape, colour = [1, 1, 1]) {
-    this.position = [0, 0];
-    this.rotation = 0;
-    this.origin = [0, 0];
-    this.vertexCount = shape.length;
-
-    let pointCount = shape.length / 2;
-    for (let i = 0; i < shape.length; i += 2) {
-        this.origin[0] += shape[i + 0];
-        this.origin[1] += shape[i + 1];
-    }
-    this.origin[0] /= pointCount;
-    this.origin[1] /= pointCount;
-
-    this.vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape), gl.STATIC_DRAW);
-
-    this.colourBuffer = gl.createBuffer();
-
-    this.setColour = function(colour) {
-        let colours = [];
-        for (let i = 0; i < this.vertexCount; i++) {
-            colours.push(colour[0], colour[1], colour[2]);
-        }
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
-    }
-    
-    this.setColour(colour);
 }
 
 export {

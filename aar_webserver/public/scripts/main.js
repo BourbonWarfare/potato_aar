@@ -101,7 +101,7 @@ function Marker(gl, eventArguments) {
 }
 
 function main() {
-    var testObjects = [];
+    var testObject = null;
 
     const oReq = new XMLHttpRequest();
     oReq.addEventListener('load', function() {
@@ -110,7 +110,11 @@ function main() {
 
         const svg = parseSVGDoc(doc.getElementsByTagName('svg')[0]);
 
+        testObject = new RenderObject(gl, svg.vertices, svg.indices, svg.colours);
+
         console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
+        console.log(svg.vertices);
+        console.log(svg.indices);
     });
     oReq.open("GET", '/maps/Altis5.svg');
     oReq.send();
@@ -122,11 +126,19 @@ function main() {
         alert("Unable to initialise WebGL. Your browser or machine may not support it.");
         return;
     }
+
+    var ext = gl.getExtension('OES_element_index_uint');
+    if (ext == null) {
+        alert("Unable to use extension");
+        return;
+    }
     
     const shaderProgram = initShaderProgram(gl, vsSource, fragSource);
 
     const programInfo = {
         program: shaderProgram,
+        primitiveType: gl.TRIANGLES,
+        useIndexBuffer: true,
         attribLocations: {
             vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
             vertexColour: gl.getAttribLocation(shaderProgram, 'aVertexColour')
@@ -233,9 +245,9 @@ function main() {
             objectsToRender.push(marker.draw());
         });
 
-        testObjects.forEach(object => {
-            objectsToRender.push(object);
-        });
+        if (testObject != null) {
+            objectsToRender.push(testObject);
+        }
         
         drawScene(gl, camera, programInfo, objectsToRender);
 
