@@ -135,7 +135,7 @@ function createPolyline(polyline, colourMap, vertices, colours, indices, default
 
     var width = defaultWidth;
     if (polyline.hasAttribute('stroke-width')) {
-        width = parseFloat(polyline.getAttribute('stroke-width'));
+        width = 0.5 * parseFloat(polyline.getAttribute('stroke-width'));
     }
 
     for (let i = 0; i < xyPairs.length - 2; i += 2) {
@@ -165,10 +165,10 @@ function handleGroup(group, colourMap, vertices, colours, indices, defaultColour
                 createPolygon(child, colourMap, vertices, colours, indices, defaultColour);
                 break;
             case 'line':
-                createLine(child, colourMap, vertices, colours, indices, defaultColour, 1);
+                createLine(child, colourMap, vertices, colours, indices, defaultColour, 0.5);
                 break;
             case 'polyline':
-                createPolyline(child, colourMap, vertices, colours, indices, defaultColour, 500);
+                createPolyline(child, colourMap, vertices, colours, indices, defaultColour, 2);
                 break;
             case 'g':
                 handleGroup(child, colourMap, vertices, colours, indices, defaultColour);
