@@ -35,14 +35,14 @@ function getColourFromFill(colourMap, colour, defaultColour = [1, 1, 1]) {
 }
 
 function createRect(rect, colourMap, vertices, colours, indices, defaultColour) {
-    let x = parseFloat(rect.getAttribute('x'));
-    let y = parseFloat(rect.getAttribute('y'));
-    let w = parseFloat(rect.getAttribute('width'));
-    let h = parseFloat(rect.getAttribute('height'));
+    const x = parseFloat(rect.getAttribute('x'));
+    const y = parseFloat(rect.getAttribute('y'));
+    const w = parseFloat(rect.getAttribute('width'));
+    const h = parseFloat(rect.getAttribute('height'));
 
-    let rgb = getColourFromFill(colourMap, rect.getAttribute('fill'), defaultColour);
+    const rgb = getColourFromFill(colourMap, rect.getAttribute('fill'), defaultColour);
 
-    let indexOffset = vertices.length / 2;
+    const indexOffset = vertices.length / 2;
     vertices.push(x + 0, y + 0);
     vertices.push(x + w, y + 0);
     vertices.push(x + w, y + h);
@@ -65,12 +65,12 @@ function createPolygon(polygon, colourMap, vertices, colours, indices, defaultCo
     const svgPoints = polygon.getAttribute('points');
     const xyPairs = svgPoints.split(/[, ]/).map(x => parseFloat(x));
 
-    let rgb = getColourFromFill(colourMap, polygon.getAttribute('fill'), defaultColour);
+    const rgb = getColourFromFill(colourMap, polygon.getAttribute('fill'), defaultColour);
     let points = [];
     const indexOffset = vertices.length / 2;
     for (let i = 0; i < xyPairs.length; i += 2) {
-        let x = xyPairs[i + 0];
-        let y = xyPairs[i + 1];
+        const x = xyPairs[i + 0];
+        const y = xyPairs[i + 1];
         points.push(x, y);
         vertices.push(x, y);
         colours.push(rgb[0], rgb[1], rgb[2]);
@@ -79,6 +79,74 @@ function createPolygon(polygon, colourMap, vertices, colours, indices, defaultCo
     earcut(points, null, 2).forEach(index => {
         indices.push(indexOffset + index);
     });
+}
+
+function createLineShape(x0, y0, x1, y1, vertices, colours, indices, rgb, width) {
+    var directionX = x1 - x0;
+    var directionY = y1 - y0;
+
+    var magnitude = Math.sqrt(directionX * directionX + directionY * directionY);
+    if (magnitude == 0) {
+        return;
+    }
+
+    directionX /= magnitude;
+    directionY /= magnitude;
+
+    var normalDirectionX = directionY;
+    var normalDirectionY = -directionX;
+    
+    const indexOffset = vertices.length / 2;
+    vertices.push(x0 + (-normalDirectionX - directionX) * width, y0 + (-normalDirectionY - directionY) * width);
+    vertices.push(x1 + (directionX - normalDirectionX) * width, y1 + (directionY - normalDirectionY) * width);
+    vertices.push(x1 + (directionX + normalDirectionX) * width, y1 + (directionY + normalDirectionY) * width);
+    vertices.push(x0 + (normalDirectionX - directionX) * width, y0 + (normalDirectionY - directionY) * width);
+
+    indices.push(indexOffset + 0);
+    indices.push(indexOffset + 1);
+    indices.push(indexOffset + 2);
+    indices.push(indexOffset + 2);
+    indices.push(indexOffset + 3);
+    indices.push(indexOffset + 0);
+
+    colours.push(rgb[0], rgb[1], rgb[2]);
+    colours.push(rgb[0], rgb[1], rgb[2]);
+    colours.push(rgb[0], rgb[1], rgb[2]);
+    colours.push(rgb[0], rgb[1], rgb[2]);
+}
+
+function createLine(line, colourMap, vertices, colours, indices, defaultColour, width) {
+    const x0 = parseFloat(line.getAttribute('x1'));
+    const y0 = parseFloat(line.getAttribute('y1'));
+
+    const x1 = parseFloat(line.getAttribute('x2'));
+    const y1 = parseFloat(line.getAttribute('y2'));
+
+    const rgb = getColourFromFill(colourMap, line.getAttribute('fill'), [0, 0, 0]);
+
+    createLineShape(x0, y0, x1, y1, vertices, colours, indices, rgb, width);
+}
+
+function createPolyline(polyline, colourMap, vertices, colours, indices, defaultColour, defaultWidth) {
+    const svgPoints = polyline.getAttribute('points');
+    const xyPairs = svgPoints.split(/[, ]/).map(x => parseFloat(x));
+
+    const rgb = getColourFromFill(colourMap, polyline.getAttribute('fill'), defaultColour);
+
+    var width = defaultWidth;
+    if (polyline.hasAttribute('stroke-width')) {
+        width = parseFloat(polyline.getAttribute('stroke-width'));
+    }
+
+    for (let i = 0; i < xyPairs.length - 2; i += 2) {
+        const x0 = xyPairs[i + 0];
+        const y0 = xyPairs[i + 1];
+
+        const x1 = xyPairs[i + 2];
+        const y1 = xyPairs[i + 3];
+
+        createLineShape(x0, y0, x1, y1, vertices, colours, indices, rgb, width);
+    }
 }
 
 function handleGroup(group, colourMap, vertices, colours, indices, defaultColour) {
@@ -96,12 +164,14 @@ function handleGroup(group, colourMap, vertices, colours, indices, defaultColour
             case 'polygon':
                 createPolygon(child, colourMap, vertices, colours, indices, defaultColour);
                 break;
-            case 'g':
-                handleGroup(child, colourMap, vertices, colours, indices, defaultColour);
-                break;
             case 'line':
+                createLine(child, colourMap, vertices, colours, indices, defaultColour, 1);
                 break;
             case 'polyline':
+                createPolyline(child, colourMap, vertices, colours, indices, defaultColour, 500);
+                break;
+            case 'g':
+                handleGroup(child, colourMap, vertices, colours, indices, defaultColour);
                 break;
             default:
                 break;

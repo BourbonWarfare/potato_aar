@@ -113,8 +113,6 @@ function main() {
         testObject = new RenderObject(gl, svg.vertices, svg.indices, svg.colours);
 
         console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
-        console.log(svg.vertices);
-        console.log(svg.indices);
     });
     oReq.open("GET", '/maps/Altis5.svg');
     oReq.send();
