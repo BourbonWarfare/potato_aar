@@ -22,7 +22,16 @@ function Circle(radius, segments) {
     return positions;
 }
 
+function Line(x0, y0, x1, y1) {
+    const positions = [
+        x0, y0,
+        x1, y1
+    ];
+    return positions;
+}
+
 export {
     Quad,
-    Circle
+    Circle,
+    Line
 };

@@ -57,13 +57,16 @@ function drawScene(gl, camera, programInfo, renderObjects) {
     );
 
     for (const renderObject of renderObjects) {
-        const modelMatrix = mat4.fromRotationTranslationScaleOrigin(
+        var modelMatrix = mat4.fromRotationTranslationScaleOrigin(
             mat4.create(),
             quat.fromEuler(quat.create(), 0, 0, renderObject.rotation),
             [renderObject.position[0], renderObject.position[1], 0],
             [1, 1, 1],
             [renderObject.origin[0], renderObject.origin[1], 0]
         );
+        if (!renderObject.useModelMatrix) {
+            mat4.identity(modelMatrix);
+        }
 
         {
             const numComponents = 2;
@@ -139,6 +142,7 @@ function RenderObject(gl, shape, indices = [], colours = []) {
     this.origin = [0, 0];
     this.vertexCount = shape.length;
     this.indexCount = indices.length;
+    this.useModelMatrix = true;
 
     let pointCount = shape.length / 2;
     for (let i = 0; i < shape.length; i += 2) {

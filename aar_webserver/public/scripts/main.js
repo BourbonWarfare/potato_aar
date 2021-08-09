@@ -1,6 +1,6 @@
 // main.js
 // entry point for web page. Initialised WebGL layer and gets ready to render
-import { Circle, Quad } from './modules/shapes.js';
+import { Circle, Quad, Line } from './modules/shapes.js';
 import { parseSVGDoc } from './modules/svg.js';
 import { RenderObject, Camera, drawScene, initShaderProgram } from './modules/rendering.js';
 
@@ -29,16 +29,24 @@ const fragSource = `
 `;
 
 function Projectile(gl, eventArguments, lifetime) {
-    this.renderObject = new RenderObject(gl, Circle(0.3, 15));
+    this.renderObject = new RenderObject(gl, Line(0, 0, 0, 0));
+    this.renderObject.useModelMatrix = false;
+
     this.uid = JSON.parse(eventArguments[0]);
     this.position = JSON.parse(eventArguments[1]);
     this.velocity = JSON.parse(eventArguments[2]);
     this.endTime = Date.now() * 0.001 + lifetime;
     this.lifetime = lifetime;
 
-    this.update = function(deltaTime) {
+    this.update = function(gl, deltaTime) {
+        const oldPosX = this.position[0];
+        const oldPosY = this.position[1];
+
         this.position[0] += this.velocity[0] * deltaTime;
         this.position[1] += this.velocity[1] * deltaTime;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.renderObject.vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(Line(oldPosX, oldPosY, this.position[0], this.position[1])), gl.STATIC_DRAW);
     }
 
     this.draw = function() {
@@ -149,6 +157,21 @@ function main() {
         }
     };
 
+    const lineInfo = {
+        program: shaderProgram,
+        primitiveType: gl.LINES,
+        useIndexBuffer: false,
+        attribLocations: {
+            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+            vertexColour: gl.getAttribLocation(shaderProgram, 'aVertexColour')
+        },
+        uniformLocations: {
+            projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+            viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+            modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix')
+        }
+    };
+
     var projectiles = new Map();
     var gameObjects = new Map();
     var markers = new Map();
@@ -240,13 +263,14 @@ function main() {
         then = now;
         
         var objectsToRender = [];
+        var projectilesToRender = [];
         projectiles.forEach(projectile => {
             if (now >= projectile.endTime) {
                 projectiles.delete(projectile.uid);
                 console.log(Date.now(), projectile.endTime, projectile.lifetime);
             } else {
-                projectile.update(deltaTime);
-                objectsToRender.push(projectile.draw());
+                projectile.update(gl, deltaTime);
+                projectilesToRender.push(projectile.draw());
             }
         });
 
@@ -266,6 +290,7 @@ function main() {
             drawScene(gl, camera, terrainInfo, [testObject]);
         }
         drawScene(gl, camera, objectInfo, objectsToRender);
+        drawScene(gl, camera, lineInfo, projectilesToRender);
 
         requestAnimationFrame(render);
     };
