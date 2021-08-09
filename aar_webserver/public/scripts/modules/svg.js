@@ -131,7 +131,7 @@ function createPolyline(polyline, colourMap, vertices, colours, indices, default
     const svgPoints = polyline.getAttribute('points');
     const xyPairs = svgPoints.split(/[, ]/).map(x => parseFloat(x));
 
-    const rgb = getColourFromFill(colourMap, polyline.getAttribute('fill'), defaultColour);
+    const rgb = getColourFromFill(colourMap, polyline.getAttribute('stroke'), defaultColour);
 
     var width = defaultWidth;
     if (polyline.hasAttribute('stroke-width')) {
@@ -151,27 +151,28 @@ function createPolyline(polyline, colourMap, vertices, colours, indices, default
 
 function handleGroup(group, colourMap, vertices, colours, indices, defaultColour) {
     let defaultColourStr = group.getAttribute('fill');
+    let workingDefaultColour = Object.assign(defaultColour);
     if (defaultColourStr != null) {
-        defaultColour = getColourFromFill(colourMap, defaultColourStr, defaultColour);
+        workingDefaultColour = getColourFromFill(colourMap, defaultColourStr, defaultColour);
     }
 
     for (let i = 0; i < group.children.length; i++) {
         let child = group.children[i];
         switch (child.tagName) {
             case 'rect':
-                createRect(child, colourMap, vertices, colours, indices, defaultColour);
+                createRect(child, colourMap, vertices, colours, indices, workingDefaultColour);
                 break;
             case 'polygon':
-                createPolygon(child, colourMap, vertices, colours, indices, defaultColour);
+                createPolygon(child, colourMap, vertices, colours, indices, workingDefaultColour);
                 break;
             case 'line':
-                createLine(child, colourMap, vertices, colours, indices, defaultColour, 0.5);
+                createLine(child, colourMap, vertices, colours, indices, workingDefaultColour, 0.5);
                 break;
             case 'polyline':
-                createPolyline(child, colourMap, vertices, colours, indices, defaultColour, 2);
+                createPolyline(child, colourMap, vertices, colours, indices, workingDefaultColour, 0.5);
                 break;
             case 'g':
-                handleGroup(child, colourMap, vertices, colours, indices, defaultColour);
+                handleGroup(child, colourMap, vertices, colours, indices, workingDefaultColour);
                 break;
             default:
                 break;
