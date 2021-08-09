@@ -64,24 +64,38 @@ function GameObject(gl, eventArguments) {
     this.currentInterpolationTime = 0;
     this.interpolationBeginPosition = this.position;
     this.timeOffset = 0;
+    this.firstUpdate = true;
 
     this.update = function(deltaTime) {
-        if (this.futurePositions.length <= 2) { return; }
-        let desiredPosition = this.futurePositions[0].position;
-        let desiredTime = this.futurePositions[0].time - this.timeOffset;
-
         this.currentInterpolationTime += deltaTime;
-        const leftToGo = this.currentInterpolationTime / desiredTime;
+        if (this.firstUpdate) {
+            if (this.futurePositions.length <= 0) { return; }
 
-        // lerp between known states
-        this.position[0] = this.interpolationBeginPosition[0] + leftToGo * (desiredPosition[0] - this.interpolationBeginPosition[0]);
-        this.position[1] = this.interpolationBeginPosition[1] + leftToGo * (desiredPosition[1] - this.interpolationBeginPosition[1]);
+            this.position = this.futurePositions[0].position;
+            this.interpolationBeginPosition = this.position;
 
-        if (leftToGo >= 1) {
-            this.interpolationBeginPosition = desiredPosition;
-            this.timeOffset += desiredTime;
-            this.currentInterpolationTime = 0;
+            this.firstUpdate = false;
+
             this.futurePositions.shift();
+        } else {
+            if (this.futurePositions.length <= 1) { return; }
+
+            let desiredPosition = this.futurePositions[0].position;
+            let desiredTime = this.futurePositions[0].time - this.timeOffset;
+
+            const leftToGo = this.currentInterpolationTime / desiredTime;
+
+            // lerp between known states
+            this.position[0] = this.interpolationBeginPosition[0] + leftToGo * (desiredPosition[0] - this.interpolationBeginPosition[0]);
+            this.position[1] = this.interpolationBeginPosition[1] + leftToGo * (desiredPosition[1] - this.interpolationBeginPosition[1]);
+
+            if (leftToGo >= 1) {
+                this.position = desiredPosition;
+                this.interpolationBeginPosition = desiredPosition;
+                this.timeOffset += desiredTime;
+                this.currentInterpolationTime = 0;
+                this.futurePositions.shift();
+            }
         }
     }
 
@@ -265,9 +279,8 @@ function main() {
         var objectsToRender = [];
         var projectilesToRender = [];
         projectiles.forEach(projectile => {
-            if (now >= projectile.endTime) {
+            if (Date.now() * 0.001 >= projectile.endTime) {
                 projectiles.delete(projectile.uid);
-                console.log(Date.now(), projectile.endTime, projectile.lifetime);
             } else {
                 projectile.update(gl, deltaTime);
                 projectilesToRender.push(projectile.draw());
