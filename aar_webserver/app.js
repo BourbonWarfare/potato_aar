@@ -10,6 +10,7 @@ const WebSocket = require('ws');
 const uuid = require('uuid');
 
 var indexRouter = require('./routes/index');
+const { time } = require('console');
 
 var app = express();
 
@@ -86,6 +87,7 @@ function Client(ws, uid) {
   this.timeConnected = Date.now();
   this.activeObjects = new Map();
   this.activeProjectiles = new Map();
+  this.uid = uid;
 
   this.send = function(type, json) {
     const packet = {
@@ -106,6 +108,45 @@ function Client(ws, uid) {
   this.removeObjectToTrack = function(event) {
     let uid = JSON.parse(event.arguments[0]);
     this.activeObjects.delete(uid);
+  }
+
+  this.update = function() {
+    const clientRunTime = (Date.now() - this.timeConnected) / 1000;
+    console.log(clientRunTime);
+
+    this.activeObjects.forEach(object => {
+      if (object.isNewState(clientRunTime)) {
+        const latestState = object.getLatestState(clientRunTime);
+        const update = {
+          object: object.uid,
+          state: latestState
+        };
+        this.send('object_update', update);
+      }
+    });
+
+    while (this.currentEvent < eventQueue.length && eventQueue[this.currentEvent].time <= clientRunTime) {
+      let frontEvent = eventQueue[this.currentEvent];
+      console.log(frontEvent.type);
+      switch (frontEvent.type) {
+        case "Object Created":
+          this.addObjectToTrack(frontEvent);
+          break;
+        case "Object Killed":
+          this.removeObjectToTrack(frontEvent);
+          break;
+        case "Fired":
+          const uid = JSON.parse(frontEvent.arguments[0]);
+          frontEvent.metaInfo = {
+            lifetime: projectiles[uid.toString()].lifetime
+          };
+        default:
+          break;
+      }
+
+      this.send('event', frontEvent);
+      this.currentEvent += 1;
+    };
   }
 };
 
@@ -134,44 +175,7 @@ const update = function() {
   accumulator += delta;
   while (accumulator >= timestep) {
     accumulator -= timestep;
-    clients.forEach(client => {
-      const clientRunTime = (Date.now() - client.timeConnected) / 1000;
-      console.log(clientRunTime);
-
-      client.activeObjects.forEach(object => {
-        if (object.isNewState(clientRunTime)) {
-          const latestState = object.getLatestState(clientRunTime);
-          const update = {
-            object: object.uid,
-            state: latestState
-          };
-          client.send('object_update', update);
-        }
-      });
-
-      while (client.currentEvent < eventQueue.length && eventQueue[client.currentEvent].time <= clientRunTime) {
-        let frontEvent = eventQueue[client.currentEvent];
-        console.log(frontEvent.type);
-        switch (frontEvent.type) {
-          case "Object Created":
-            client.addObjectToTrack(frontEvent);
-            break;
-          case "Object Killed":
-            client.removeObjectToTrack(frontEvent);
-            break;
-          case "Fired":
-            const uid = JSON.parse(frontEvent.arguments[0]);
-            frontEvent.metaInfo = {
-              lifetime: projectiles[uid.toString()].lifetime
-            };
-          default:
-            break;
-        }
-
-        client.send('event', frontEvent);
-        client.currentEvent += 1;
-      }
-    });
+    clients.forEach(client => client.update());
   }
 
   setTimeout(update, overallUpdateRate);

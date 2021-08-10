@@ -122,6 +122,11 @@ function Marker(gl, eventArguments) {
     };
 }
 
+function Event(onEvent, onUndo) {
+    this.forward = onEvent;
+    this.backward = onUndo;
+}
+
 function main() {
     var testObject = null;
 
@@ -195,9 +200,50 @@ function main() {
 
     var worldSize = 0;
 
+    const eventMap = {
+        'Object Created': new Event((uid, packetArguments) => {
+            gameObjects.set(
+                uid,
+                new GameObject(gl, packetArguments)
+            );
+            console.log(packetArguments);
+        }, (uid, packetArguments) => {
+            console.log('nope');
+        }),
+        'Object Killed': new Event((uid, packetArguments) => {
+            if (gameObjects.has(uid)) {
+                gameObjects.get(uid).renderObject.setColour([1, 0, 0]);
+            }
+        }, (uid, packetArguments) => {
+
+        }),
+        'Fired': new Event((uid, packetArguments) => {
+            projectiles.set(
+                uid,
+                new Projectile(gl, packet.data.arguments, packet.data.metaInfo.lifetime)
+            );
+        }, (uid, packetArguments) => {
+
+        }),
+        'Marker Created': new Event((uid, packetArguments) => {
+            markers.set(
+                uid,
+                new Marker(gl, packetArguments)
+            );
+        }, (uid, packetArguments) => {
+
+        })
+    };
+
     const ws = new WebSocket("ws://localhost:8082");
     ws.addEventListener("open", () => {
         console.log("conneced to websocket!");
+
+        let slider = document.getElementById('playbackTime');
+        slider.onmouseup = function() {
+            const percentage = this.value / 100;
+            
+        }
 
         ws.addEventListener('message', ({ data: incomingData }) => {
             const packet = JSON.parse(incomingData);
@@ -227,38 +273,11 @@ function main() {
                 case 'event':
                     {
                         const uid = JSON.parse(packet.data.arguments[0]);
-                        switch (packet.data.type) {
-                            case "Object Created":
-                                gameObjects.set(
-                                    uid,
-                                    new GameObject(gl, packet.data.arguments)
-                                );
-                                console.log(packet.data.arguments);
-                                break;
-                            case "Marker Created":
-                                markers.set(
-                                    uid,
-                                    new Marker(gl, packet.data.arguments)
-                                );
-                                console.log(packet.data);
-                                break;
-                            case "Marker Updated":
-                                break;
-                            case "Fired":
-                                projectiles.set(
-                                    uid,
-                                    new Projectile(gl, packet.data.arguments, packet.data.metaInfo.lifetime)
-                                );
-                                break;
-                            case "Object Killed":
-                                if (gameObjects.has(uid)) {
-                                    gameObjects.get(uid).renderObject.setColour([1, 0, 0]);
-                                }
-                                break;
-                            default:
-                                console.log(packet.data);
-                                break;
-                        };
+                        if (eventMap.hasOwnProperty(packet.data.type)) {
+                            eventMap[packet.data.type].forward(uid, packet.data.arguments);
+                        } else {
+                            console.log(`Event '${packet.data.type}' not defined`);
+                        }
                     }
                     break;
                 case 'object_update':
