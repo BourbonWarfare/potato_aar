@@ -52,11 +52,7 @@ const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).event
 const projectiles = BSON.deserialize(zip.getEntry('projectilesTeeny.bson').getData());
 var missionObjectsStates = new Map();
 
-var last = Date.now();
-var accumulator = 0;
-
-const timestep = 1 / 5;
-const overallUpdateRate = 1/20;
+const overallUpdateRate = 1 / 20;
 
 function GameObject(uid) {
   this.uid = uid;
@@ -84,7 +80,7 @@ var clients = new Map();
 function Client(ws, uid) {
   this.socket = ws;
   this.currentEvent = 0;
-  this.timeConnected = Date.now();
+  this.currentTime = 0;
   this.activeObjects = new Map();
   this.activeProjectiles = new Map();
   this.uid = uid;
@@ -110,13 +106,12 @@ function Client(ws, uid) {
     this.activeObjects.delete(uid);
   }
 
-  this.update = function() {
-    const clientRunTime = (Date.now() - this.timeConnected) / 1000;
-    console.log(clientRunTime);
+  this.update = function(deltaTime) {
+    this.currentTime += deltaTime;
 
     this.activeObjects.forEach(object => {
-      if (object.isNewState(clientRunTime)) {
-        const latestState = object.getLatestState(clientRunTime);
+      if (object.isNewState(this.currentTime)) {
+        const latestState = object.getLatestState(this.currentTime);
         const update = {
           object: object.uid,
           state: latestState
@@ -125,7 +120,7 @@ function Client(ws, uid) {
       }
     });
 
-    while (this.currentEvent < eventQueue.length && eventQueue[this.currentEvent].time <= clientRunTime) {
+    while (this.currentEvent < eventQueue.length && eventQueue[this.currentEvent].time <= this.currentTime) {
       let frontEvent = eventQueue[this.currentEvent];
       console.log(frontEvent.type);
       switch (frontEvent.type) {
@@ -137,13 +132,11 @@ function Client(ws, uid) {
           break;
         case "Fired":
           const uid = JSON.parse(frontEvent.arguments[0]);
-          frontEvent.metaInfo = {
-            lifetime: projectiles[uid.toString()].lifetime
-          };
+          frontEvent.arguments.push(projectiles[uid.toString()].lifetime);
         default:
           break;
       }
-
+      
       this.send('event', frontEvent);
       this.currentEvent += 1;
     };
@@ -159,7 +152,18 @@ wss.on('connection', ws => {
 
   console.log(ws.id);
 
-  thisClient.send('init', metaInfo);
+  if (metaInfo.endTime == 0) {
+    let maxTimeSeen = 0;
+    eventQueue.forEach(event => {
+      maxTimeSeen = Math.max(maxTimeSeen, event.time);
+    });
+
+    let adjustedMetaInfo = metaInfo;
+    adjustedMetaInfo.endTime = maxTimeSeen;
+    thisClient.send('init', adjustedMetaInfo);
+  } else {
+    thisClient.send('init', metaInfo);
+  }
 
   ws.on('close', () => {
     console.log("client has disconnected");
@@ -168,16 +172,8 @@ wss.on('connection', ws => {
 });
 
 const update = function() {
-  let current = Date.now();
-  let delta = (current - last) / 1000;
-  last = current;
-
-  accumulator += delta;
-  while (accumulator >= timestep) {
-    accumulator -= timestep;
-    clients.forEach(client => client.update());
-  }
-
+  // for each tick, update client 5 times as fast
+  clients.forEach(client => client.update(overallUpdateRate * 5));
   setTimeout(update, overallUpdateRate);
 }
 update();
