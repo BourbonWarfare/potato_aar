@@ -85,6 +85,8 @@ function GameObject(gl, eventArguments) {
             this.currentState = i;
         }
 
+        if (this.currentState >= this.futurePositions.length) { return; }
+
         this.position = this.futurePositions[this.currentState].position;
         this.interpolationBeginPosition = this.position;
         this.timeOffset = desiredTime;
@@ -219,7 +221,7 @@ function main() {
     var markers = new Map();
 
     var camera = new Camera([1920, 1080], canvas);
-    camera.position = [14093, 21834];
+    camera.position = [10028, 5591];
 
     var worldSize = 0;
 
@@ -262,6 +264,7 @@ function main() {
                 uid,
                 new Marker(gl, packetArguments)
             );
+            console.log('marker created');
         }, (uid, packetArguments) => {
             markers.delete(uid);
         })
@@ -302,7 +305,7 @@ function main() {
 
                             console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
                         });
-                        oReq.open("GET", '/maps/Altis5.svg');
+                        oReq.open("GET", '/maps/cup_chernarus_A3.svg');
                         oReq.send();
                     }
                     break;
@@ -347,12 +350,12 @@ function main() {
 
         if (deltaTime >= maxDelta) {
             deltaTime = maxDelta; // don't interpolate a lot if we are unresponsive
-            console.log(deltaTime);
         }
 
         if (adjustedTime) {
             if (desiredTime < currentTime) {
                 // reverse time
+                currentEvent = Math.min(currentEvent, eventQueue.length - 1);
                 while (currentEvent >= 0 && desiredTime < eventQueue[currentEvent].time) {
                     const frontEvent = eventQueue[currentEvent];
                     eventMap[frontEvent.type].backward(frontEvent.object, frontEvent.arguments, currentTime);
