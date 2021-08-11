@@ -339,10 +339,16 @@ function main() {
 
     var currentTime = 0;
     var then = 0;
+    const maxDelta = 5/60;
     function render(now) {
         now *= 0.001;
-        const deltaTime = now - then;
+        let deltaTime = now - then;
         then = now;
+
+        if (deltaTime >= maxDelta) {
+            deltaTime = maxDelta; // don't interpolate a lot if we are unresponsive
+            console.log(deltaTime);
+        }
 
         if (adjustedTime) {
             if (desiredTime < currentTime) {
