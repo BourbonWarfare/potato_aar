@@ -234,7 +234,9 @@ function main() {
 
     const eventMap = {
         'Object Created': new Event((uid, packetArguments) => {
-            console.log(uid, packetArguments);
+            const classname = packetArguments[1].replaceAll('\"', '');
+            if (classname === 'potato_spectate_spectator' || classname === 'potato_spectate_playableSpectator' || classname === 'potato_spectate_holder') { return; } // temp fix for bad data
+            console.log(uid, classname, packetArguments);
             gameObjects.set(
                 uid,
                 new GameObject(gl, packetArguments)
@@ -311,6 +313,10 @@ function main() {
                     break;
                 case 'event':
                     {
+                        if (!packet.hasOwnProperty('data')) {
+                            console.log(`Unknown event packet: ${packet}`);
+                            break;
+                        }
                         const uid = JSON.parse(packet.data.arguments[0]);
                         if (eventMap.hasOwnProperty(packet.data.type)) {
                             eventQueue.push({

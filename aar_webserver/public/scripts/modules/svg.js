@@ -175,6 +175,7 @@ function handleGroup(group, colourMap, vertices, colours, indices, defaultColour
                 handleGroup(child, colourMap, vertices, colours, indices, workingDefaultColour);
                 break;
             default:
+                console.log(`'${child.tagName}' not defined SVG type within module`);
                 break;
         }
     }
