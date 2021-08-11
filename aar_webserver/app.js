@@ -50,7 +50,6 @@ const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
 const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
 
 const projectiles = BSON.deserialize(zip.getEntry('projectilesTeeny.bson').getData());
-var missionObjectsStates = new Map();
 
 const overallUpdateRate = 1 / 20;
 
@@ -94,11 +93,8 @@ function Client(ws, uid) {
   }
 
   this.addObjectToTrack = function(event) {
-    let uid = JSON.parse(event.arguments[0]);
-    if (!missionObjectsStates.has(uid)) {
-      missionObjectsStates.set(uid, new GameObject(uid));
-    }
-    this.activeObjects.set(uid, missionObjectsStates.get(uid));
+    const uid = JSON.parse(event.arguments[0]);
+    this.activeObjects.set(uid, new GameObject(uid));
   }
 
   this.removeObjectToTrack = function(event) {
@@ -122,7 +118,6 @@ function Client(ws, uid) {
 
     while (this.currentEvent < eventQueue.length && eventQueue[this.currentEvent].time <= this.currentTime) {
       let frontEvent = eventQueue[this.currentEvent];
-      console.log(frontEvent.type);
       switch (frontEvent.type) {
         case "Object Created":
           this.addObjectToTrack(frontEvent);
@@ -147,10 +142,9 @@ const wss = new WebSocket.Server({ port: 8082 });
 wss.on('connection', ws => {
   ws.id = uuid.v4();
 
-  thisClient = new Client(ws);
+  thisClient = new Client(ws, ws.id);
   clients.set(ws.id, thisClient);
-
-  console.log(ws.id);
+  console.log(`${ws.id} connected`);
 
   if (metaInfo.endTime == 0) {
     let maxTimeSeen = 0;
@@ -166,14 +160,14 @@ wss.on('connection', ws => {
   }
 
   ws.on('close', () => {
-    console.log("client has disconnected");
+    console.log(`$ws.id} has disconnected`);
     clients.delete(ws.id);
   });
 });
 
 const update = function() {
   // for each tick, update client 5 times as fast
-  clients.forEach(client => client.update(overallUpdateRate * 5));
+  clients.forEach(client => { client.update(overallUpdateRate * 5) });
   setTimeout(update, overallUpdateRate);
 }
 update();
