@@ -97,7 +97,7 @@ function GameObject(gl, eventArguments) {
 
         this.currentInterpolationTime += deltaTime;
         if (this.firstUpdate) {
-            this.position = this.futurePositions[0].position;
+            this.position = this.futurePositions[this.currentState].position;
             this.interpolationBeginPosition = this.position;
 
             this.firstUpdate = false;
