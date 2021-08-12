@@ -32,12 +32,12 @@ function Projectile(gl, eventArguments, currentTime) {
     this.renderObject = new RenderObject(gl, Line(0, 0, 0, 0));
     this.renderObject.useModelMatrix = false;
 
-    this.uid = JSON.parse(eventArguments[0]);
-    this.origin = JSON.parse(eventArguments[1]);
+    this.uid = eventArguments[0];
+    this.origin = eventArguments[1];
     this.startTime = currentTime;
     this.position = this.origin;
-    this.velocity = JSON.parse(eventArguments[2]);
-    this.lifetime = JSON.parse(eventArguments[4]);
+    this.velocity = eventArguments[2];
+    this.lifetime = eventArguments[4];
     this.endTime = currentTime + this.lifetime;
 
     this.forceState = function(time) {
@@ -64,8 +64,8 @@ function Projectile(gl, eventArguments, currentTime) {
 
 function GameObject(gl, eventArguments) {
     this.renderObject = new RenderObject(gl, Quad([1, 1]));
-    this.position = JSON.parse(eventArguments[2]);
-    this.name = JSON.parse(eventArguments[3]);
+    this.position = eventArguments[2];
+    this.name = eventArguments[3];
 
     this.futurePositions = [];
     this.currentState = 0;
@@ -139,7 +139,7 @@ function GameObject(gl, eventArguments) {
 
 function Marker(gl, eventArguments) {
     this.renderObject = new RenderObject(gl, Circle(5, 5));
-    this.position = JSON.parse(eventArguments[6]);
+    this.position = eventArguments[6];
 
     this.draw = function() {
         this.renderObject.position = this.position;
@@ -273,16 +273,21 @@ function main() {
     };
 
     var objectStates = new Map();
+    var settingTime = false;
 
     const ws = new WebSocket("ws://localhost:8082");
     ws.addEventListener("open", () => {
         console.log("conneced to websocket!");
 
         let slider = document.getElementById('playbackTime');
+        slider.onmousedown = function() {
+            settingTime = true;
+        }
         slider.onmouseup = function() {
             const percentage = this.value / slider.max;
             desiredTime = percentage * missionLength;
             adjustedTime = true;
+            settingTime = false;
         }
 
         ws.addEventListener('message', ({ data: incomingData }) => {
@@ -307,7 +312,7 @@ function main() {
 
                             console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
                         });
-                        oReq.open("GET", '/maps/cup_chernarus_A3.svg');
+                        oReq.open("GET", '/maps/Altis.svg');
                         oReq.send();
                     }
                     break;
@@ -319,12 +324,18 @@ function main() {
                         }
                         const uid = JSON.parse(packet.data.arguments[0]);
                         if (eventMap.hasOwnProperty(packet.data.type)) {
-                            eventQueue.push({
+                            var event = {
                                 time: packet.data.time,
                                 type: packet.data.type,
                                 object: uid,
-                                arguments: packet.data.arguments
+                                arguments: []
+                            };
+
+                            packet.data.arguments.forEach(argument => {
+                                event.arguments.push(JSON.parse(argument))
                             });
+
+                            eventQueue.push(event);
                         } else {
                             console.log(`Event '${packet.data.type}' not defined`);
                         }
@@ -338,6 +349,19 @@ function main() {
                         });
                     }
                     let stateInfo = objectStates.get(packet.data.object);
+
+                    if (stateInfo.states.length >= 1) {
+                        const lastState = stateInfo.states[stateInfo.states.length - 1];
+
+                        const dx = lastState.position[0] - packet.data.state.position[0];
+                        const dy = lastState.position[1] - packet.data.state.position[1];
+
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance <= 1) {
+                            break;
+                        }
+                    }
+
                     stateInfo.states.push(packet.data.state);
                     break;
                 default:
@@ -356,6 +380,11 @@ function main() {
 
         if (deltaTime >= maxDelta) {
             deltaTime = maxDelta; // don't interpolate a lot if we are unresponsive
+        }
+
+        if (!settingTime) {
+            let slider = document.getElementById('playbackTime');
+            slider.value = slider.max * currentTime / missionLength;
         }
 
         if (adjustedTime) {

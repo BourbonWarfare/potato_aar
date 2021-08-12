@@ -45,7 +45,7 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-const zip = new AdmZip('./08-08-21_19-00-07_Latofel_TVT35_Patrol_V2.zip');
+const zip = new AdmZip('./08-08-21_19-49-42_gn502_co40_Rivalry_v1.zip');
 const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
 const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
 
