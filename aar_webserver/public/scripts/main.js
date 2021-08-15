@@ -168,7 +168,7 @@ function main() {
         alert("Unable to use extension");
         return;
     }
-    
+
     const shaderProgram = initShaderProgram(gl, vsSource, fragSource);
 
     const objectInfo = {
@@ -374,6 +374,16 @@ function main() {
     var then = 0;
     const maxDelta = 5/60;
     function render(now) {
+        var width = gl.canvas.clientWidth;
+        var height = gl.canvas.clientHeight;
+
+        if (gl.canvas.width != width || gl.canvas.has != height) {
+            gl.canvas.width = width;
+            gl.canvas.height = height;
+
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        }
+
         now *= 0.001;
         let deltaTime = now - then;
         then = now;

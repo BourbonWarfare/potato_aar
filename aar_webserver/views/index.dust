@@ -1,10 +1,24 @@
 <!DOCTYPE html>
 <html>
   <body>
-    <canvas id="glCanvas" width="1600" height="900"></canvas>
-    <div class="slidercontainer">
-      <input type="range" min="0", max="100", value="0", class="slider" id="playbackTime">
-    </div
+    <link rel="stylesheet" href="stylesheets/style.css">
+    <canvas id="glCanvas"></canvas>
+    <div class="playbackControls">
+      <div class="playbackBackground"></div>
+
+      <div class="slidercontainer">
+        <input type="range" min="0", max="1000", value="0", class="slider" id="playbackTime">
+      </div>
+
+      <div class="playbackTactileControls">
+        <div class="playbackTime">
+          <div class="playbackCurrentTime"><b>00:00</b></div>
+          <b style="position: absolute; float:right; display: inline">/</b>
+          <div class="playbackRemainingTime"><b>00:00</b></div>
+        </div>
+        <button type="button" class="playbackPlay" onclick="alert('hello world!')"></div>
+      </div>
+    </div>
   </body>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
             integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
@@ -13,5 +27,5 @@
   <script src="https://unpkg.com/earcut@2.2.3/dist/earcut.min.js" crossorigin="anonymous" defer></script>
 
   <script type="module" src="/scripts/main.js"></script>
-  <script type="module">import main from './scripts/main.js'; window.onload = main;</script>
+  <script type="module">import main from './scripts/main.js'; //window.onload = main;</script>
 </html>

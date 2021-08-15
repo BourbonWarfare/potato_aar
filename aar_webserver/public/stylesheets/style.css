@@ -1,8 +1,174 @@
+:root {
+  /*
+    Static contrast is applied to any item which is a static element which is not a background
+    High contrast is applied to any interactable item
+    Low contrast is applied to any interactable item's secondary charateristic (e.g: a sliders container)
+    Background is applied to the base background element
+
+    Interact opacity is the default opacity for any interactable item. All interactable items will have this default opacity, and when hovered will increase opacity to 1
+  */
+  --bw-static-contrast: #303030;
+  --bw-high-contrast: #5E5E5E;
+  --bw-low-contrast: #919191;
+  --bw-background: #C6C6C6;
+
+  --bw-interact-opacity: 0.8;
+}
+
+html {
+  box-sizing: border-box;
+  height: 100%;
+}
+
 body {
-  padding: 50px;
+  margin: 0px;
+  width: 100%;
+  height: 100%;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
-a {
-  color: #00B7FF;
+#glCanvas {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
 }
+
+.playbackControls {
+  position: absolute;
+  top: 85%;
+  left: 15%;
+  width: 70%;
+}
+
+.playbackBackground {
+  position: absolute;
+  background: var(--bw-background);
+  opacity: 1;
+
+  top: -25%;
+  left: -0.5%;
+
+  height: 150%;
+  width: 101%;
+}
+
+.playbackTactileControls {
+  position: relative;
+
+  background: transparent;
+  opacity: 1;
+
+  width: 128px;
+  height: 32px;
+
+  left: 500px;
+ 
+}
+
+button.playbackPlay {
+  -webkit-appearance: none;
+  appearance: none;
+
+  position: absolute;
+  box-sizing: border-box;
+  width: 32px;
+  height: 100%;
+  background: transparent;
+  border-style: solid;
+  border-width: 16px 0px 16px 32px;
+  border-color: transparent transparent transparent var(--bw-high-contrast);
+
+  left: 0px;
+  top: 0px;
+
+  opacity: var(--bw-interact-opacity);
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+
+}
+
+button.playbackPlay:hover {
+  opacity: 1;
+}
+
+.playbackTime {
+  position: absolute;
+
+  left: 40px;
+  top: 0.5em;
+
+  width: 100%;
+  height: 100%;
+
+  color: var(--bw-static-contrast);
+}
+
+.playbackCurrentTime {
+  position: relative;
+  display: inline;
+  padding: 0.5em;
+
+  color: var(--bw-static-contrast);
+}
+
+.playbackRemainingTime {
+  position: absolute;
+  float: right;
+  left: 4.25em;
+  top: 0;
+
+  color: var(--bw-static-contrast);
+}
+
+.slidercontainer {
+  position: relative;
+  display: inline;
+  width: 100%;
+
+  left: 0px;
+  top: 0px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 25px;
+  outline: none;
+  opacity: var(--bw-interact-opacity);
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+  background: var(--bw-low-contrast);
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Override default look */
+  appearance: none;
+  width: 25px; /* Set a specific slider handle width */
+  height: 25px; /* Slider handle height */
+  background: var(--bw-high-contrast); /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+.slider::-moz-range-thumb {
+  width: 25px; /* Set a specific slider handle width */
+  height: 25px; /* Slider handle height */
+  background: var(--bw-high-contrast); /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+/** FF*/
+input[type="range"]::-moz-range-progress {
+  background-color: var(--bw-static-contrast);
+  height: 100%;
+}
+/* IE*/
+input[type="range"]::-ms-fill-lower {
+  background-color: var(--bw-static-contrast); 
+  height: 100%;
+}
+
