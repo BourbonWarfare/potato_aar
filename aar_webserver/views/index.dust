@@ -16,7 +16,7 @@
           <b style="position: absolute; float:right; display: inline">/</b>
           <div class="playbackRemainingTime"><b>00:00</b></div>
         </div>
-        <button type="button" class="playbackPlay" onclick="alert('hello world!')"></div>
+        <button type="button" class="playbackPlay" id="playbackButton"></div>
       </div>
     </div>
   </body>
@@ -27,5 +27,5 @@
   <script src="https://unpkg.com/earcut@2.2.3/dist/earcut.min.js" crossorigin="anonymous" defer></script>
 
   <script type="module" src="/scripts/main.js"></script>
-  <script type="module">import main from './scripts/main.js'; //window.onload = main;</script>
+  <script type="module">import main from './scripts/main.js'; window.onload = main;</script>
 </html>

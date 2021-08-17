@@ -85,6 +85,12 @@ button.playbackPlay {
   -webkit-transition: .2s;
   transition: opacity .2s;
 
+  cursor: pointer;
+}
+
+button.playbackPlay.paused {
+  border-style: double;
+  border-width: 0px 0 0px 32px;
 }
 
 button.playbackPlay:hover {

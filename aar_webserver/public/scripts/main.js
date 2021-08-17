@@ -46,6 +46,8 @@ function Projectile(gl, eventArguments, currentTime) {
     }
 
     this.update = function(gl, deltaTime) {
+        if (deltaTime == 0) { return; }
+
         const oldPosX = this.position[0];
         const oldPosY = this.position[1];
 
@@ -95,7 +97,7 @@ function GameObject(gl, eventArguments) {
     }
 
     this.update = function(deltaTime) {
-        if (this.currentState >= this.futurePositions.length) { return; }
+        if (this.currentState >= this.futurePositions.length || deltaTime == 0) { return; }
 
         this.currentInterpolationTime += deltaTime;
         if (this.firstUpdate) {
@@ -231,6 +233,8 @@ function main() {
     var missionLength = 0;
     var desiredTime = 0;
     var adjustedTime = false;
+    var paused = false;
+    document.getElementById('playbackButton').classList.toggle('paused', !paused);
 
     const eventMap = {
         'Object Created': new Event((uid, packetArguments) => {
@@ -288,6 +292,12 @@ function main() {
             desiredTime = percentage * missionLength;
             adjustedTime = true;
             settingTime = false;
+        }
+
+        let playPause = document.getElementById('playbackButton');
+        playPause.onclick = function() {
+            playPause.classList.toggle('paused');
+            paused = !paused;
         }
 
         ws.addEventListener('message', ({ data: incomingData }) => {
@@ -428,12 +438,6 @@ function main() {
 
             adjustedTime = false;
         }
-        
-        while (currentEvent < eventQueue.length && currentTime >= eventQueue[currentEvent].time) {
-            const frontEvent = eventQueue[currentEvent];
-            eventMap[frontEvent.type].forward(frontEvent.object, frontEvent.arguments, currentTime);
-            currentEvent += 1;
-        }
 
         objectStates.forEach((stateData, uid) => {
             if (stateData.states.length > 0 && stateData.currentState < stateData.states.length) {
@@ -444,21 +448,29 @@ function main() {
             }
         });
 
-        currentTime += deltaTime;
-
-        projectiles.forEach(projectile => {
-            if (currentTime >= projectile.endTime) {
-                projectiles.delete(projectile.uid);
-            } else {
-                projectile.update(gl, deltaTime);
+        if (!paused) {
+            while (currentEvent < eventQueue.length && currentTime >= eventQueue[currentEvent].time) {
+                const frontEvent = eventQueue[currentEvent];
+                eventMap[frontEvent.type].forward(frontEvent.object, frontEvent.arguments, currentTime);
+                currentEvent += 1;
             }
-        });
+            
+            currentTime += deltaTime;
 
-        gameObjects.forEach(gameObject => {
-            if (gameObject.active) {
-                gameObject.update(deltaTime);
-            }
-        });
+            projectiles.forEach(projectile => {
+                if (currentTime >= projectile.endTime) {
+                    projectiles.delete(projectile.uid);
+                } else {
+                    projectile.update(gl, deltaTime);
+                }
+            });
+
+            gameObjects.forEach(gameObject => {
+                if (gameObject.active) {
+                    gameObject.update(deltaTime);
+                }
+            });
+        }
 
         var objectsToRender = [];
         var projectilesToRender = [];
