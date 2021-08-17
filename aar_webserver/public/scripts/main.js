@@ -436,6 +436,10 @@ function main() {
                     eventMap[frontEvent.type].forward(frontEvent.object, frontEvent.arguments, currentTime);
                     currentEvent += 1;
                 }
+
+                if (desiredTime > eventQueue[currentEvent - 1].time) {
+                    desiredTime = eventQueue[currentEvent - 1].time; 
+                }
             }
 
             currentTime = desiredTime;
