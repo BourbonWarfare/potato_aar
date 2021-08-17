@@ -154,6 +154,16 @@ function Event(onEvent, onUndo) {
     this.backward = onUndo;
 }
 
+function formatTime(timeInSeconds) {
+    let minutes = Math.floor(timeInSeconds / 60);
+    let seconds = Math.floor(timeInSeconds - minutes * 60);
+
+    let major = (new Array(3).join('0')+minutes).slice(-2);
+    let minor = (new Array(3).join('0')+seconds).slice(-2);
+
+    return `${major}:${minor}`;
+}
+
 function main() {
     var testObject = null;
 
@@ -307,6 +317,8 @@ function main() {
                 case 'init':
                     {
                         missionLength = packet.data.endTime;
+                        document.getElementById('totalTime').innerText = formatTime(missionLength);
+                        
                         worldSize = packet.data.mapSize;
                         const oReq = new XMLHttpRequest();
                         oReq.addEventListener('load', function() {
@@ -456,6 +468,7 @@ function main() {
             }
             
             currentTime += deltaTime;
+            document.getElementById('currentTime').innerText = formatTime(currentTime);
 
             projectiles.forEach(projectile => {
                 if (currentTime >= projectile.endTime) {

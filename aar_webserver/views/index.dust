@@ -12,9 +12,9 @@
 
       <div class="playbackTactileControls">
         <div class="playbackTime">
-          <div class="playbackCurrentTime"><b>00:00</b></div>
+          <b><div class="playbackCurrentTime" id="currentTime">00:00</div></b>
           <b style="position: absolute; float:right; display: inline">/</b>
-          <div class="playbackRemainingTime"><b>00:00</b></div>
+          <b><div class="playbackRemainingTime" id="totalTime">00:00</div></b>
         </div>
         <button type="button" class="playbackPlay" id="playbackButton"></div>
       </div>
