@@ -235,7 +235,7 @@ function main() {
     var markers = new Map();
 
     var camera = new Camera([1920, 1080], canvas);
-    camera.position = [10028, 5591];
+    camera.position = [0, 0];
 
     var worldSize = 0;
 
@@ -290,6 +290,7 @@ function main() {
 
     var objectStates = new Map();
     var settingTime = false;
+    var latestUpdateTimeRecieved = 0;
 
     const ws = new WebSocket("ws://localhost:8082");
     ws.addEventListener("open", () => {
@@ -389,6 +390,13 @@ function main() {
                         const dx = lastState.position[0] - packet.data.state.position[0];
                         const dy = lastState.position[1] - packet.data.state.position[1];
 
+                        if (camera.position === [0, 0]) {
+                            camera.position = [
+                                packet.data.state.position[0],
+                                packet.data.state.position[1]
+                            ];
+                        }
+
                         const distance = Math.sqrt(dx * dx + dy * dy);
                         if (distance <= 1) {
                             break;
@@ -448,7 +456,7 @@ function main() {
                     currentEvent += 1;
                 }
 
-                if (desiredTime > eventQueue[currentEvent - 1].time) {
+                if (desiredTime > latestUpdateTimeRecieved && currentEvent == eventQueue.length && desiredTime > eventQueue[currentEvent - 1].time) {
                     desiredTime = eventQueue[currentEvent - 1].time; 
                 }
             }
@@ -468,6 +476,7 @@ function main() {
 
         objectStates.forEach((stateData, uid) => {
             if (stateData.states.length > 0 && stateData.currentState < stateData.states.length) {
+                latestUpdateTimeRecieved = Math.max(latestUpdateTimeRecieved, stateData.states[stateData.currentState].time);
                 if (gameObjects.has(uid)) {
                     gameObjects.get(uid).updateFromPacket(stateData.states[stateData.currentState]);
                     stateData.currentState += 1;
