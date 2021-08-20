@@ -1,0 +1,7 @@
+{
+    "keep_mission_cached_for": 3600,
+    "tick_rate": 0.05,
+    "mission_replay_path_relative": "",
+    "web_rtc_port": 8082,
+    "client_update_update_ahead": 15
+}

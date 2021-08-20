@@ -9,6 +9,9 @@ var BSON = require('bson');
 const WebSocket = require('ws');
 const uuid = require('uuid');
 const sqlite3 = require('sqlite3');
+const config = require('./server_config.json');
+
+console.log('Started server with settings: ', config);
 
 var indexRouter = require('./routes/index');
 const { time } = require('console');
@@ -52,7 +55,14 @@ function MissionCache(timeUntilRemoval) {
 
   this.get = function(path) {
     if (!this.cache.has(path)) {
-      const zip = new AdmZip(`./${path}`);
+      let filepath = `./${config.mission_replay_path_relative}`;
+      if (filepath == './') {
+        filepath = `./${path}`;
+      } else {
+        filepath += `/${path}`;
+      }
+
+      const zip = new AdmZip(filepath);
       const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
       const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
 
@@ -65,6 +75,10 @@ function MissionCache(timeUntilRemoval) {
         zip: zip,
         lastAccess: Date.now()
       });
+
+      console.log(`Adding ${path} to cache`);
+    } else {
+      console.log(`Retrieving ${path} from cache`);
     }
 
     let mission = this.cache.get(path);
@@ -78,15 +92,14 @@ function MissionCache(timeUntilRemoval) {
       const timeDelta = (Date.now() - mission.lastAccess) / 1000;
 
       if (timeDelta >= this.timeUntilRemoval) {
+        console.log(`Removing ${key} from cache (timeDelta: ${timeDelta})`);
         this.cache.delete(key);
       }
     });
   }
 }
-// keep missions cached for an hour after access
-const cachedMissions = new MissionCache(60 * 60);
-
-const overallUpdateRate = 1 / 20;
+const cachedMissions = new MissionCache(config.keep_mission_cached_for);
+const overallUpdateRate = config.tick_rate;
 
 function mysql_real_escape_string(str) {
   if (typeof str != 'string')
@@ -252,7 +265,7 @@ function Client(ws, uid) {
   }
 };
 
-const wss = new WebSocket.Server({ port: 8082 });
+const wss = new WebSocket.Server({ port: config.web_rtc_port });
 wss.on('connection', ws => {
   ws.id = uuid.v4();
 
@@ -270,7 +283,7 @@ wss.on('connection', ws => {
 
 const update = function() {
   // for each tick, update client 15 times as fast
-  clients.forEach(client => { client.update(overallUpdateRate * 15) });
+  clients.forEach(client => { client.update(overallUpdateRate * config.client_update_update_ahead) });
   cachedMissions.update();
   setTimeout(update, overallUpdateRate);
 }
