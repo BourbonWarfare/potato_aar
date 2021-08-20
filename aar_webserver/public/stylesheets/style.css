@@ -158,7 +158,9 @@ button.playbackPlay:hover {
   opacity: var(--bw-interact-opacity);
   -webkit-transition: .2s;
   transition: opacity .2s;
-  background: var(--bw-low-contrast);
+  background: var(--bw-static-contrast);
+
+  box-shadow: 0px 0 0 0 var(--bw-low-contrast) inset;
 }
 
 .slider:hover {

@@ -420,6 +420,7 @@ function main() {
                             });
 
                             eventQueue.push(event);
+                            latestUpdateTimeRecieved = Math.max(latestUpdateTimeRecieved, event.time);
                         } else {
                             console.log(`Event '${packet.data.type}' not defined`);
                         }
@@ -499,14 +500,12 @@ function main() {
                 currentEvent = Math.max(0, currentEvent);
             } else {
                 // fast forward
+                desiredTime = Math.min(desiredTime, latestUpdateTimeRecieved);
+                
                 while (currentEvent < eventQueue.length && desiredTime >= eventQueue[currentEvent].time) {
                     const frontEvent = eventQueue[currentEvent];
                     eventMap[frontEvent.type].forward(frontEvent.object, frontEvent.arguments, currentTime);
                     currentEvent += 1;
-                }
-
-                if (desiredTime > latestUpdateTimeRecieved && currentEvent == eventQueue.length && desiredTime > eventQueue[currentEvent - 1].time) {
-                    desiredTime = eventQueue[currentEvent - 1].time; 
                 }
             }
 
@@ -560,6 +559,12 @@ function main() {
                     gameObject.update(deltaTime);
                 }
             });
+        }
+
+        if (missionLength != 0) {
+            let slider = document.getElementById('playbackTime');
+            const validAmount = slider.clientWidth * latestUpdateTimeRecieved / missionLength;
+            document.getElementById('playbackTime').style.boxShadow = `${validAmount}px 0 0 0 var(--bw-low-contrast) inset`;
         }
 
         var objectsToRender = [];
