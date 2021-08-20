@@ -328,7 +328,7 @@ function main() {
             settingTime = true;
         }
         slider.onmouseup = function() {
-            const percentage = this.value / slider.max;
+            const percentage = this.value / this.max;
             desiredTime = percentage * missionLength;
             adjustedTime = true;
             settingTime = false;
@@ -542,6 +542,10 @@ function main() {
             
             currentTime += deltaTime;
             document.getElementById('currentTime').innerText = formatTime(currentTime);
+            if (settingTime) {
+                const slider = document.getElementById('playbackTime');
+                document.getElementById('currentTime').innerText = formatTime(missionLength * slider.value / slider.max);
+            }
 
             projectiles.forEach(projectile => {
                 if (currentTime >= projectile.endTime) {
