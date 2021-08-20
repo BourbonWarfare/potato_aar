@@ -46,9 +46,75 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-let cachedMissions = new Map();
+function MissionCache(timeUntilRemoval) {
+  this.cache = new Map();
+  this.timeUntilRemoval = timeUntilRemoval; // in seconds
+
+  this.get = function(path) {
+    if (!this.cache.has(path)) {
+      const zip = new AdmZip(`./${path}`);
+      const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
+      const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
+
+      const projectiles = BSON.deserialize(zip.getEntry('projectilesTeeny.bson').getData());
+
+      this.cache.set(path, {
+        eventQueue: eventQueue,
+        projectiles: projectiles,
+        metaInfo: metaInfo,
+        zip: zip,
+        lastAccess: Date.now()
+      });
+    }
+
+    let mission = this.cache.get(path);
+    mission.lastAccess = Date.now();
+
+    return mission;
+  }
+
+  this.update = function() {
+    this.cache.forEach((mission, key) => {
+      const timeDelta = (Date.now() - mission.lastAccess) / 1000;
+
+      if (timeDelta >= this.timeUntilRemoval) {
+        this.cache.delete(key);
+      }
+    });
+  }
+}
+// keep missions cached for an hour after access
+const cachedMissions = new MissionCache(60 * 60);
 
 const overallUpdateRate = 1 / 20;
+
+function mysql_real_escape_string(str) {
+  if (typeof str != 'string')
+      return str;
+
+  return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
+      switch (char) {
+          case "\0":
+              return "\\0";
+          case "\x08":
+              return "\\b";
+          case "\x09":
+              return "\\t";
+          case "\x1a":
+              return "\\z";
+          case "\n":
+              return "\\n";
+          case "\r":
+              return "\\r";
+          case "\"":
+          case "'":
+          case "\\":
+          case "%":
+              return "\\"+char; // prepends a backslash to backslash, percent,
+                                // and double/single quotes
+      }
+  });
+}
 
 function GameObject(uid, zip) {
   this.uid = uid;
@@ -145,29 +211,15 @@ function Client(ws, uid) {
       }
     });
     
-    db.each('SELECT * FROM missions WHERE ReplayPath="18-08-21_21-04-03_gn502_TvT25_Discotheque_v1.zip";', (err, row) => {
+    const file = mysql_real_escape_string("18-08-21_21-04-03_gn502_TvT25_Discotheque_v1.zip");
+
+    db.each(`SELECT * FROM missions WHERE ReplayPath="${file}";`, (err, row) => {
       if (err) {
         console.log(err);
         return;
       }
       let path = row.ReplayPath;
       let map = row.Map;
-
-      if (!cachedMissions.has(path)) {
-        const zip = new AdmZip(`./${path}`);
-        const metaInfo = JSON.parse(zip.getEntry('meta.json').getData().toString());
-        const eventQueue = BSON.deserialize(zip.getEntry('events.bson').getData()).events;
-
-        const projectiles = BSON.deserialize(zip.getEntry('projectilesTeeny.bson').getData());
-
-        cachedMissions.set(path, {
-          eventQueue: eventQueue,
-          projectiles: projectiles,
-          metaInfo: metaInfo,
-          zip: zip,
-          lastAccess: Date.now()
-        });
-      }
 
       let missionMetaInfo = cachedMissions.get(path);
 
@@ -219,6 +271,7 @@ wss.on('connection', ws => {
 const update = function() {
   // for each tick, update client 15 times as fast
   clients.forEach(client => { client.update(overallUpdateRate * 15) });
+  cachedMissions.update();
   setTimeout(update, overallUpdateRate);
 }
 update();
