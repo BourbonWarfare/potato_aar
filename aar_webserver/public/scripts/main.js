@@ -406,23 +406,25 @@ function main() {
                             console.log(`Unknown event packet: ${packet}`);
                             break;
                         }
-                        const uid = JSON.parse(packet.data.arguments[0]);
-                        if (eventMap.hasOwnProperty(packet.data.type)) {
-                            var event = {
-                                time: packet.data.time,
-                                type: packet.data.type,
-                                object: uid,
-                                arguments: []
-                            };
+                        if (packet.data.type != 'Mission End'){
+                            const uid = JSON.parse(packet.data.arguments[0]);
+                            if (eventMap.hasOwnProperty(packet.data.type)) {
+                                var event = {
+                                    time: packet.data.time,
+                                    type: packet.data.type,
+                                    object: uid,
+                                    arguments: []
+                                };
 
-                            packet.data.arguments.forEach(argument => {
-                                event.arguments.push(JSON.parse(argument))
-                            });
+                                packet.data.arguments.forEach(argument => {
+                                    event.arguments.push(JSON.parse(argument))
+                                });
 
-                            eventQueue.push(event);
-                            latestUpdateTimeRecieved = Math.max(latestUpdateTimeRecieved, event.time);
-                        } else {
-                            console.log(`Event '${packet.data.type}' not defined`);
+                                eventQueue.push(event);
+                                latestUpdateTimeRecieved = Math.max(latestUpdateTimeRecieved, event.time);
+                            } else {
+                                console.log(`Event '${packet.data.type}' not defined`);
+                            }
                         }
                     }
                     break;
@@ -453,7 +455,6 @@ function main() {
                             break;
                         }
                     }
-
                     stateInfo.states.push(packet.data.state);
                     break;
                 default:
