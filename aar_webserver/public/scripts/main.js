@@ -486,6 +486,9 @@ function main() {
         if (!settingTime) {
             let slider = document.getElementById('playbackTime');
             slider.value = slider.max * currentTime / missionLength;
+        } else {
+            let slider = document.getElementById('playbackTime');
+            slider.value = Math.min(slider.value, slider.max * latestUpdateTimeRecieved / missionLength);
         }
 
         if (adjustedTime) {
