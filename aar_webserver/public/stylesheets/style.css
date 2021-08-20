@@ -33,6 +33,19 @@ body {
   height: 100%;
 }
 
+table, th, td {
+  border-collapse: collapse;
+  border: 1px solid var(--bw-static-contrast);
+}
+
+.missionTable {
+  position: absolute;
+  left: 15%;
+  top: 30%;
+
+  background: var(--bw-background);
+}
+
 .playbackControls {
   position: absolute;
   top: 85%;

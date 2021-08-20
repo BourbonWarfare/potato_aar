@@ -228,6 +228,8 @@ function main() {
         }
     };
 
+    var missions = null;
+
     var projectiles = new Map();
     var gameObjects = new Map();
     var markers = new Map();
@@ -319,6 +321,8 @@ function main() {
                         missionLength = packet.data.endTime;
                         document.getElementById('totalTime').innerText = formatTime(missionLength);
                         
+                        const map = JSON.parse(packet.data.map);
+                        console.log(map);
                         worldSize = packet.data.mapSize;
                         const oReq = new XMLHttpRequest();
                         oReq.addEventListener('load', function() {
@@ -334,8 +338,15 @@ function main() {
 
                             console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
                         });
-                        oReq.open("GET", '/maps/Altis.svg');
+                        oReq.open("GET", `/maps/${map}.svg`);
                         oReq.send();
+                    }
+                    break;
+                case 'missions':
+                    {
+                        missions = packet.data;
+
+                        document.createElement('missionTable');
                     }
                     break;
                 case 'event':

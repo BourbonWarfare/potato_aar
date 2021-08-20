@@ -19,6 +19,23 @@
         <button type="button" class="playbackPlay" id="playbackButton"></div>
       </div>
     </div>
+
+    <table class="missionTable" id="missionTable">
+      <tr>
+        <th>Mission</th>
+        <th>Map</th>
+        <th>Player Count</th>
+        <th>Date</th>
+      </tr>
+      {#missions}
+      <tr>
+        <td>{MissionName}</td>
+        <td>{Map}</td>
+        <td>{PlayerCount}</td>
+        <td>{Date}</td>
+      </tr>
+      {/missions}
+    </table>
   </body>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
             integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
