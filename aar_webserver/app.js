@@ -216,7 +216,14 @@ function Client(ws, uid) {
     };
   }
 
-  this.playMission = function() {
+  this.playMission = function(file) {
+    this.state = 'init';
+
+    this.currentEvent = 0;
+    this.currentTime = 0;
+    this.activeObjects = new Map();
+    this.activeProjectiles = new Map();
+
     let db = new sqlite3.Database('missions.db', sqlite3.OPEN_READONLY, (err) => {
       if (err) {
         console.error(err.message);
@@ -224,15 +231,12 @@ function Client(ws, uid) {
       }
     });
     
-    const file = mysql_real_escape_string("18-08-21_21-04-03_gn502_TvT25_Discotheque_v1.zip");
-
     db.each(`SELECT * FROM missions WHERE ReplayPath="${file}";`, (err, row) => {
       if (err) {
-        console.log(err);
+        console.error(err);
         return;
       }
       let path = row.ReplayPath;
-      let map = row.Map;
 
       let missionMetaInfo = cachedMissions.get(path);
 
@@ -273,7 +277,18 @@ wss.on('connection', ws => {
   clients.set(ws.id, thisClient);
   console.log(`${ws.id} connected`);
 
-  thisClient.playMission();
+  ws.on('message', (message) => {
+    const object = JSON.parse(message);
+    const data = object.data;
+    switch (object.type) {
+      case 'missionRequest':
+        console.log(`${thisClient.uid} requesting ${data.dbKey}`)
+        thisClient.playMission(mysql_real_escape_string(data.dbKey));
+        break;
+      default:
+        break;
+    }
+  })
 
   ws.on('close', () => {
     console.log(`${ws.id} has disconnected`);

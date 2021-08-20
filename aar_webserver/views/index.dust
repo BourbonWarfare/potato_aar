@@ -28,11 +28,14 @@
         <th>Date</th>
       </tr>
       {#missions}
-      <tr>
+      <tr class="missionEntry">
         <td>{MissionName}</td>
         <td>{Map}</td>
         <td>{PlayerCount}</td>
         <td>{Date}</td>
+        <td><button>Select</button></td>
+        <td style="display: none" id="realDate">{RealDate}</div>
+        <td style="display: none" id="dbKey">{ReplayPath}</div>
       </tr>
       {/missions}
     </table>

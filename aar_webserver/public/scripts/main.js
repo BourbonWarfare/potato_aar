@@ -165,8 +165,6 @@ function formatTime(timeInSeconds) {
 }
 
 function main() {
-    var testObject = null;
-
     const canvas = document.querySelector("#glCanvas");
     const gl = canvas.getContext("webgl");
 
@@ -228,8 +226,7 @@ function main() {
         }
     };
 
-    var missions = null;
-
+    var testObject = null;
     var projectiles = new Map();
     var gameObjects = new Map();
     var markers = new Map();
@@ -247,6 +244,40 @@ function main() {
     var adjustedTime = false;
     var paused = false;
     document.getElementById('playbackButton').classList.toggle('paused', !paused);
+
+    var objectStates = new Map();
+    var settingTime = false;
+    var latestUpdateTimeRecieved = 0;
+
+    var currentTime = 0;
+
+    function init() {
+        testObject = null;
+        projectiles.clear();
+        gameObjects.clear();
+        markers.clear();
+        
+        worldSize = 0;
+        eventQueue = [];
+        currentEvent = 0;
+
+        missionLength = 0;
+        desiredTime = 0;
+        adjustedTime = false;
+        paused = false;
+
+        document.getElementById('playbackButton').classList.toggle('paused', !paused);
+
+        objectStates.clear();
+        settingTime = false;
+        latestUpdateTimeRecieved = 0;
+
+        currentTime = 0;
+
+        camera.position = [0, 0];
+
+        console.log('init');
+    }
 
     const eventMap = {
         'Object Created': new Event((uid, packetArguments) => {
@@ -288,10 +319,6 @@ function main() {
         })
     };
 
-    var objectStates = new Map();
-    var settingTime = false;
-    var latestUpdateTimeRecieved = 0;
-
     const ws = new WebSocket("ws://localhost:8082");
     ws.addEventListener("open", () => {
         console.log("conneced to websocket!");
@@ -313,12 +340,37 @@ function main() {
             paused = !paused;
         }
 
+        {
+            const missionTable = document.getElementById('missionTable');
+            const elements = missionTable.getElementsByClassName('missionEntry');
+            for (let i = 0; i < elements.length; i++ ){
+                const entry = elements[i];
+                const entryObject = {
+                    type: 'missionRequest',
+                    data: {
+                        name: entry.children[0].innerHTML,
+                        map: entry.children[1].innerHTML,
+                        playerCount: entry.children[2].innerHTML,
+                        date: entry.children[3].innerHTML,
+                        realDate: entry.children[5].innerHTML,
+                        dbKey: entry.children[6].innerHTML
+                    }
+                };
+    
+                entry.getElementsByTagName('button')[0].onclick = function() {
+                    ws.send(JSON.stringify(entryObject));
+                }
+            }
+        }
+
         ws.addEventListener('message', ({ data: incomingData }) => {
             const packet = JSON.parse(incomingData);
 
             switch (packet.type) {
                 case 'init':
                     {
+                        init();
+
                         missionLength = packet.data.endTime;
                         document.getElementById('totalTime').innerText = formatTime(missionLength);
                         
@@ -336,8 +388,6 @@ function main() {
                                 svg.vertices[i] = worldSize - svg.vertices[i];
                             }
                             testObject = new RenderObject(gl, svg.vertices, svg.indices, svg.colours);
-
-                            console.log(svg.vertices.length, svg.colours.length, svg.indices.length);
                         });
                         oReq.open("GET", `/maps/${map}.svg`);
                         oReq.send();
@@ -411,7 +461,6 @@ function main() {
         });
     });
 
-    var currentTime = 0;
     var then = 0;
     const maxDelta = 5/60;
     function render(now) {

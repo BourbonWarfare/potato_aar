@@ -20,7 +20,9 @@ router.get('/', function(req, res, next) {
         return;
       }
       let date = new Date(row.Date * 1000);
+      row.RealDate = row.Date;
       row.Date = date.toLocaleString();
+
       entries.push(row);
     }, (err, count) => {
       if (err) {
