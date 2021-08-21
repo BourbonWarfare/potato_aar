@@ -6,7 +6,8 @@ function Quad(extents) {
         0, 0,
         extents[0], 0,
         extents[0], extents[1],
-        0, extents[1]
+        0, extents[1],
+        0, 0
     ];
     return positions;
 }
