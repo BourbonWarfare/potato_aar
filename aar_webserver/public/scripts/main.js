@@ -35,7 +35,7 @@ function Projectile(gl, eventArguments, currentTime) {
     this.uid = eventArguments[0];
     this.origin = eventArguments[1];
     this.startTime = currentTime;
-    this.position = this.origin;
+    this.position = [this.origin[0], this.origin[1]];
     this.velocity = eventArguments[2];
     this.lifetime = eventArguments[4];
     this.endTime = currentTime + this.lifetime;
