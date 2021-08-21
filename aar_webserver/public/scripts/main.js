@@ -2,7 +2,37 @@
 // entry point for web page. Initialised WebGL layer and gets ready to render
 import { Circle, Quad, Line } from './modules/shapes.js';
 import { parseSVGDoc } from './modules/svg.js';
-import { RenderObject, Camera, drawScene, initShaderProgram } from './modules/rendering.js';
+import { RenderObject, Texture, Camera, drawScene, initShaderProgram } from './modules/rendering.js';
+
+const textureVsSource = `
+    attribute vec2 aVertexPosition;
+    attribute vec3 aVertexColour;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uModelMatrix;
+    uniform mat4 uViewMatrix;
+    uniform mat4 uProjectionMatrix;
+
+    varying lowp vec4 vColour;
+    varying highp vec2 vTextureCoord;
+    
+    void main() {
+        mat4 mvp = uProjectionMatrix * uViewMatrix * uModelMatrix;
+        gl_Position = mvp * vec4(aVertexPosition, 0, 1); 
+        vColour = vec4(aVertexColour, 1);
+        vTextureCoord = aTextureCoord;
+    }
+`;
+const textureFragSource = `
+    varying lowp vec4 vColour;
+    varying highp vec2 vTextureCoord;
+
+    uniform sampler2D uSampler;
+
+    void main() {
+        gl_FragColor = texture2D(uSampler, vTextureCoord);
+    }
+`;
 
 const vsSource = `
     attribute vec2 aVertexPosition;
@@ -64,8 +94,21 @@ function Projectile(gl, eventArguments, currentTime) {
     };
 }
 
-function GameObject(gl, eventArguments) {
-    this.renderObject = new RenderObject(gl, Circle(1, 15));
+function GameObject(gl, eventArguments, texture = null) {
+    this.renderObject = new RenderObject(gl, Quad([1, 1]));
+
+    if (texture) {
+        this.renderObject.setTexture(texture);
+    }
+
+    if (eventArguments[1].includes('potato_w')) {
+        this.renderObject.setColour([0, 0, 1]);
+    } else if (eventArguments[1].includes('potato_e')) {
+        this.renderObject.setColour([1, 0, 0]);
+    } else if (eventArguments[1].includes('potato_i')) {
+        this.renderObject.setColour([0, 1, 0]);
+    }
+
     this.position = eventArguments[2];
     this.name = eventArguments[3];
 
@@ -179,7 +222,7 @@ function toggleMissionTray(force = null) {
 
 function main() {
     const canvas = document.querySelector("#glCanvas");
-    const gl = canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl", { alpha: false });
 
     if (gl == null) {
         alert("Unable to initialise WebGL. Your browser or machine may not support it.");
@@ -192,20 +235,28 @@ function main() {
         return;
     }
 
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_COLOR, gl.DST_COLOR);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    const textureShaderProgram = initShaderProgram(gl, textureVsSource, textureFragSource);
     const shaderProgram = initShaderProgram(gl, vsSource, fragSource);
 
     const objectInfo = {
-        program: shaderProgram,
+        program: textureShaderProgram,
         primitiveType: gl.TRIANGLE_STRIP,
         useIndexBuffer: false,
+        useTextureMapping: true,
         attribLocations: {
-            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-            vertexColour: gl.getAttribLocation(shaderProgram, 'aVertexColour')
+            vertexPosition: gl.getAttribLocation(textureShaderProgram, 'aVertexPosition'),
+            vertexColour: gl.getAttribLocation(textureShaderProgram, 'aVertexColour'),
+            textureCoord: gl.getAttribLocation(textureShaderProgram, 'aTextureCoord')
         },
         uniformLocations: {
-            projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-            viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
-            modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix')
+            projectionMatrix: gl.getUniformLocation(textureShaderProgram, 'uProjectionMatrix'),
+            viewMatrix: gl.getUniformLocation(textureShaderProgram, 'uViewMatrix'),
+            modelMatrix: gl.getUniformLocation(textureShaderProgram, 'uModelMatrix'),
+            textureSampler: gl.getUniformLocation(textureShaderProgram, 'uSampler')
         }
     }
 
@@ -213,6 +264,7 @@ function main() {
         program: shaderProgram,
         primitiveType: gl.TRIANGLES,
         useIndexBuffer: true,
+        useTextureMapping: false,
         attribLocations: {
             vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
             vertexColour: gl.getAttribLocation(shaderProgram, 'aVertexColour')
@@ -228,6 +280,7 @@ function main() {
         program: shaderProgram,
         primitiveType: gl.LINES,
         useIndexBuffer: false,
+        useTextureMapping: false,
         attribLocations: {
             vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
             vertexColour: gl.getAttribLocation(shaderProgram, 'aVertexColour')
@@ -238,6 +291,9 @@ function main() {
             modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix')
         }
     };
+    
+    var textures = new Map();
+    textures.set('death_icon', new Texture(gl, '/icons/death_skull.png'));
 
     var testObject = null;
     var projectiles = new Map();
@@ -302,7 +358,7 @@ function main() {
             console.log(uid, classname, packetArguments);
             gameObjects.set(
                 uid,
-                new GameObject(gl, packetArguments)
+                new GameObject(gl, packetArguments, textures.get('death_icon'))
             );
         }, (uid, packetArguments) => {
             gameObjects.delete(uid);

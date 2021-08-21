@@ -88,6 +88,25 @@ function drawScene(gl, camera, programInfo, renderObjects) {
             );
         }
 
+        if (programInfo.useTextureMapping && renderObject.textureCoordinateBuffer != null) {
+            const numComponents = 2;
+            const type = gl.FLOAT;
+            const normalise = false;
+            const stride = 0;
+            const offset = 0;
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, renderObject.textureCoordinateBuffer);
+            gl.vertexAttribPointer(
+                programInfo.attribLocations.textureCoord,
+                numComponents,
+                type,
+                normalise,
+                stride,
+                offset
+            );
+            gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
+        }
+
         if (renderObject.colourBuffer != null) {
             const numComponents = 3;
             const type = gl.FLOAT;
@@ -126,6 +145,12 @@ function drawScene(gl, camera, programInfo, renderObjects) {
             modelMatrix
         );
 
+        if (programInfo.useTextureMapping && renderObject.texture != null) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, renderObject.texture.texture);
+            gl.uniform1i(programInfo.uniformLocations.textureSampler, 0);
+        }
+
         if (!programInfo.useIndexBuffer) {
             gl.drawArrays(programInfo.primitiveType, 0, renderObject.vertexCount);
         } else {
@@ -135,6 +160,43 @@ function drawScene(gl, camera, programInfo, renderObjects) {
     }
 }
 
+function Texture(gl, url) {
+    this.texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    this.width = 1;
+    this.height = 1;
+    const border = 0;
+    const srcFormat = gl.RGBA;
+    const srcType = gl.UNSIGNED_BYTE;
+    const pixel = new Uint8Array([255, 0, 255, 255]);
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, this.width, this.height, border, srcFormat, srcType, pixel);
+
+    this.image = new Image();
+    this.image.onload = () => {
+        function isPowerOf2(value) {
+            return (value & (value - 1)) == 0;
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, this.image);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+
+        this.width = this.image.width;
+        this.height = this.image.height;
+
+        if (isPowerOf2(this.image.width) && isPowerOf2(this.image.height)) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        } else {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
+    }
+    this.image.src = url;
+}
 
 function RenderObject(gl, shape, indices = [], colours = []) {
     this.position = [0, 0];
@@ -143,6 +205,7 @@ function RenderObject(gl, shape, indices = [], colours = []) {
     this.vertexCount = shape.length / 2;
     this.indexCount = indices.length;
     this.useModelMatrix = true;
+    this.vertices = shape;
 
     this.setColour = function(colour) {
         let colours = [];
@@ -154,12 +217,30 @@ function RenderObject(gl, shape, indices = [], colours = []) {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
     }
 
+    this.setTexture = function(texture) {
+        this.texture = texture;
+        this.textureCoordinateBuffer = gl.createBuffer();
+
+        const texCoords = [
+            0, 0,
+            1, 0,
+            1, 1,
+            0, 1
+        ];
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordinateBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+    }
+
     for (let i = 0; i < shape.length; i += 2) {
         this.origin[0] += shape[i + 0];
         this.origin[1] += shape[i + 1];
     }
     this.origin[0] /= this.vertexCount;
     this.origin[1] /= this.vertexCount;
+
+    this.textureCoordinateBuffer = null;
+    this.texture = null;
 
     this.vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -249,6 +330,7 @@ function Camera(size, workingElement) {
 
 export {
     RenderObject,
+    Texture,
     Camera,
     drawScene,
     initShaderProgram
