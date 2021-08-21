@@ -164,6 +164,11 @@ function Texture(gl, url) {
     this.texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
+    var defaultColor = [255, 0, 255, 255];
+    if (url === '') {
+        defaultColor = [255, 255, 255, 255];
+    }
+
     const level = 0;
     const internalFormat = gl.RGBA;
     this.width = 1;
@@ -171,7 +176,7 @@ function Texture(gl, url) {
     const border = 0;
     const srcFormat = gl.RGBA;
     const srcType = gl.UNSIGNED_BYTE;
-    const pixel = new Uint8Array([255, 0, 255, 255]);
+    const pixel = new Uint8Array(defaultColor);
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, this.width, this.height, border, srcFormat, srcType, pixel);
 
     this.image = new Image();

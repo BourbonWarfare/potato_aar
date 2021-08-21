@@ -30,7 +30,7 @@ const textureFragSource = `
     uniform sampler2D uSampler;
 
     void main() {
-        gl_FragColor = texture2D(uSampler, vTextureCoord);
+        gl_FragColor = vColour * texture2D(uSampler, vTextureCoord);
     }
 `;
 
@@ -101,13 +101,16 @@ function GameObject(gl, eventArguments, texture = null) {
         this.renderObject.setTexture(texture);
     }
 
-    if (eventArguments[1].includes('potato_w')) {
-        this.renderObject.setColour([0, 0, 1]);
-    } else if (eventArguments[1].includes('potato_e')) {
-        this.renderObject.setColour([1, 0, 0]);
-    } else if (eventArguments[1].includes('potato_i')) {
-        this.renderObject.setColour([0, 1, 0]);
+    this.sideColour = [0, 0, 0];
+    this.className = eventArguments[1];
+    if (this.className.includes('potato_w')) {
+        this.sideColour = [0, 0, 1];
+    } else if (this.className.includes('potato_e')) {
+        this.sideColour = [1, 0, 0];
+    } else if (this.className.includes('potato_i')) {
+        this.sideColour = [0, 1, 0];
     }
+    this.renderObject.setColour(this.sideColour);
 
     this.position = eventArguments[2];
     this.name = eventArguments[3];
@@ -293,6 +296,7 @@ function main() {
     };
     
     var textures = new Map();
+    textures.set('none', new Texture(gl, ''));
     textures.set('death_icon', new Texture(gl, '/icons/death_skull.png'));
 
     var testObject = null;
@@ -302,6 +306,7 @@ function main() {
 
     var camera = new Camera([1920, 1080], canvas);
     camera.position = [0, 0];
+    var setCameraPosition = false;
 
     var worldSize = 0;
 
@@ -347,6 +352,7 @@ function main() {
         currentTime = 0;
 
         camera.position = [0, 0];
+        setCameraPosition = false;
 
         console.log('init');
     }
@@ -358,18 +364,20 @@ function main() {
             console.log(uid, classname, packetArguments);
             gameObjects.set(
                 uid,
-                new GameObject(gl, packetArguments, textures.get('death_icon'))
+                new GameObject(gl, packetArguments, new Texture(gl, ''))
             );
         }, (uid, packetArguments) => {
             gameObjects.delete(uid);
         }),
         'Object Killed': new Event((uid, packetArguments) => {
             if (gameObjects.has(uid)) {
-                gameObjects.get(uid).renderObject.setColour([1, 0, 0]);
+                gameObjects.get(uid).renderObject.setColour([1, 1, 1]);
+                gameObjects.get(uid).renderObject.setTexture(textures.get('death_icon'));
             }
         }, (uid, packetArguments) => {
             if (gameObjects.has(uid)) {
-                gameObjects.get(uid).renderObject.setColour([0, 0, 0]);
+                gameObjects.get(uid).renderObject.setColour(gameObjects.get(uid).sideColour);
+                gameObjects.get(uid).renderObject.setTexture(textures.get('none'));
             }
         }),
         'Fired': new Event((uid, packetArguments, currentTime) => {
@@ -516,7 +524,9 @@ function main() {
                         const dx = lastState.position[0] - packet.data.state.position[0];
                         const dy = lastState.position[1] - packet.data.state.position[1];
 
-                        if (camera.position === [0, 0]) {
+                        const object = gameObjects.get(packet.data.object);
+                        if (!setCameraPosition && object != null && object.className != 'HeadlessClient_F') {
+                            setCameraPosition = true;
                             camera.position = [
                                 packet.data.state.position[0],
                                 packet.data.state.position[1]
