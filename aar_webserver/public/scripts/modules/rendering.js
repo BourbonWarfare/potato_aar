@@ -226,15 +226,8 @@ function RenderObject(gl, shape, indices = [], colours = []) {
         this.texture = texture;
         this.textureCoordinateBuffer = gl.createBuffer();
 
-        const texCoords = [
-            0, 0,
-            1, 0,
-            1, 1,
-            0, 1
-        ];
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordinateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
     }
 
     for (let i = 0; i < shape.length; i += 2) {
