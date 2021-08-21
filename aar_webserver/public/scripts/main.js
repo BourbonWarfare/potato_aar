@@ -164,6 +164,19 @@ function formatTime(timeInSeconds) {
     return `${major}:${minor}`;
 }
 
+function toggleMissionTray(force = null) {
+    const tray = document.getElementById('missionTableContainer');
+    if (typeof force === 'boolean' && force) {
+        if (force) {
+            tray.classList.add('slide');
+        } else {
+            tray.classList.remove('slide');
+        }
+    } else {
+        tray.classList.toggle('slide');
+    }
+}
+
 function main() {
     const canvas = document.querySelector("#glCanvas");
     const gl = canvas.getContext("webgl");
@@ -250,6 +263,9 @@ function main() {
     var latestUpdateTimeRecieved = 0;
 
     var currentTime = 0;
+
+    document.getElementById('trayButton').onclick = toggleMissionTray;
+    toggleMissionTray(true);
 
     function init() {
         testObject = null;
@@ -370,6 +386,7 @@ function main() {
                 case 'init':
                     {
                         init();
+                        toggleMissionTray();
 
                         missionLength = packet.data.endTime;
                         document.getElementById('totalTime').innerText = formatTime(missionLength);

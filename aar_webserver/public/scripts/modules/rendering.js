@@ -68,7 +68,7 @@ function drawScene(gl, camera, programInfo, renderObjects) {
             mat4.identity(modelMatrix);
         }
 
-        {
+        if (renderObject.vertexBuffer != null) {
             const numComponents = 2;
             const type = gl.FLOAT;
             const normalise = false;
@@ -88,7 +88,7 @@ function drawScene(gl, camera, programInfo, renderObjects) {
             );
         }
 
-        {
+        if (renderObject.colourBuffer != null) {
             const numComponents = 3;
             const type = gl.FLOAT;
             const normalize = false;
@@ -160,9 +160,11 @@ function RenderObject(gl, shape, indices = [], colours = []) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
 
-    this.indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
+    if (indices != []) {
+        this.indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
+    }
 
     this.setColour = function(colour) {
         let colours = [];

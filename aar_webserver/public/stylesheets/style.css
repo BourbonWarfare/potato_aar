@@ -13,6 +13,7 @@
   --bw-background: #C6C6C6;
 
   --bw-interact-opacity: 0.8;
+  --bw-interact-transition-time: 0.1s;
 }
 
 html {
@@ -39,11 +40,59 @@ table, th, td {
 }
 
 .missionTable {
-  position: absolute;
-  left: 15%;
-  top: 30%;
-
   background: var(--bw-background);
+}
+
+@keyframes slide {
+  from { left: initial; right: 100%; }
+  to { right: initial; left: 0%; }
+}
+
+.missionTableContainer {
+  position: absolute;
+  right: 100%;
+  top: 0%;
+  
+  overflow: visible;
+
+  height: 30%;
+  min-height: 50px;
+
+  transition: all 0s;
+}
+
+.missionTableContainer.slide {
+  animation-name: slide;
+  animation-duration: 0s;
+  animation-fill-mode: both;
+}
+
+.missionTableScroller {
+  overflow-y: auto;
+  height: 100%;
+}
+
+.trayButton {
+  position: absolute;
+  left: 100%;
+
+  width: 30px;
+  height: 30px;
+
+  opacity: var(--bw-interact-opacity);
+  -webkit-transition: var(--bw-interact-transition-time);
+  transition: opacity var(--bw-interact-transition-time);
+
+  background-image: url('/icons/mission_tray_icon.png');
+  background-size: 30px 30px;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+
+  cursor: pointer;
+}
+
+.trayButton:hover {
+  opacity: 1;
 }
 
 .playbackControls {
@@ -96,8 +145,8 @@ button.playbackPlay {
   top: 0px;
 
   opacity: var(--bw-interact-opacity);
-  -webkit-transition: .2s;
-  transition: opacity .2s;
+  -webkit-transition: var(--bw-interact-transition-time);
+  transition: opacity var(--bw-interact-transition-time);
 
   cursor: pointer;
 }
@@ -156,8 +205,8 @@ button.playbackPlay:hover {
   height: 25px;
   outline: none;
   opacity: var(--bw-interact-opacity);
-  -webkit-transition: .2s;
-  transition: opacity .2s;
+  -webkit-transition: var(--bw-interact-transition-time);
+  transition: opacity var(--bw-interact-transition-time);
   background: var(--bw-static-contrast);
 
   box-shadow: 0px 0 0 0 var(--bw-low-contrast) inset;
