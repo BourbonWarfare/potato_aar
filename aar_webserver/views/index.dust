@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+  <title>POTATO AAR</title>
   <body>
     <link rel="stylesheet" href="stylesheets/style.css">
     <canvas id="glCanvas"></canvas>

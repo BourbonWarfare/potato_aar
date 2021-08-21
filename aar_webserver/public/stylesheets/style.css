@@ -232,14 +232,3 @@ button.playbackPlay:hover {
   cursor: pointer; /* Cursor on hover */
 }
 
-/** FF*/
-input[type="range"]::-moz-range-progress {
-  background-color: var(--bw-static-contrast);
-  height: 100%;
-}
-/* IE*/
-input[type="range"]::-ms-fill-lower {
-  background-color: var(--bw-static-contrast); 
-  height: 100%;
-}
-

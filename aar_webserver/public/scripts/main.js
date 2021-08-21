@@ -65,7 +65,7 @@ function Projectile(gl, eventArguments, currentTime) {
 }
 
 function GameObject(gl, eventArguments) {
-    this.renderObject = new RenderObject(gl, Quad([1, 1]));
+    this.renderObject = new RenderObject(gl, Circle(1, 15));
     this.position = eventArguments[2];
     this.name = eventArguments[3];
 
@@ -323,16 +323,16 @@ function main() {
             );
         }, (uid, packetArguments) => {
             projectiles.delete(uid);
-        }),
+        })/*,
         'Marker Created': new Event((uid, packetArguments) => {
+            console.log('marker created', packetArguments);
             markers.set(
                 uid,
                 new Marker(gl, packetArguments)
             );
-            console.log('marker created');
         }, (uid, packetArguments) => {
             markers.delete(uid);
-        })
+        })*/
     };
 
     const ws = new WebSocket("ws://localhost:8082");

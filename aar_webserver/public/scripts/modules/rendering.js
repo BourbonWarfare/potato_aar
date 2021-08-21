@@ -140,31 +140,9 @@ function RenderObject(gl, shape, indices = [], colours = []) {
     this.position = [0, 0];
     this.rotation = 0;
     this.origin = [0, 0];
-    this.vertexCount = shape.length;
+    this.vertexCount = shape.length / 2;
     this.indexCount = indices.length;
     this.useModelMatrix = true;
-
-    let pointCount = shape.length / 2;
-    for (let i = 0; i < shape.length; i += 2) {
-        this.origin[0] += shape[i + 0];
-        this.origin[1] += shape[i + 1];
-    }
-    this.origin[0] /= pointCount;
-    this.origin[1] /= pointCount;
-
-    this.vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape), gl.STATIC_DRAW);
-
-    this.colourBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
-
-    if (indices != []) {
-        this.indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
-    }
 
     this.setColour = function(colour) {
         let colours = [];
@@ -174,6 +152,31 @@ function RenderObject(gl, shape, indices = [], colours = []) {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
+    }
+
+    for (let i = 0; i < shape.length; i += 2) {
+        this.origin[0] += shape[i + 0];
+        this.origin[1] += shape[i + 1];
+    }
+    this.origin[0] /= this.vertexCount;
+    this.origin[1] /= this.vertexCount;
+
+    this.vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape), gl.STATIC_DRAW);
+
+    this.colourBuffer = gl.createBuffer();
+    if (colours.length === 0) {
+        this.setColour([0, 0, 0]);
+    } else {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.colourBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
+    }
+
+    if (indices != []) {
+        this.indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
     }
 }
 
