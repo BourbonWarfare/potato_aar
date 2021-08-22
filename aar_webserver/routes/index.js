@@ -14,7 +14,7 @@ router.get('/', function(req, res, next) {
   var entries = [];
   db.serialize(() => {
     this.missions = [];
-    db.each('SELECT * FROM missions;', (err, row) => {
+    db.each('SELECT * FROM missions ORDER BY Date DESC;', (err, row) => {
       if (err) {
         console.error(err);
         return;
