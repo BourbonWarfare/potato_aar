@@ -8,6 +8,7 @@
 #include <ctime>
 #include "nlohmann/json.hpp"
 #include "zip.h"
+#include "sqlite3.h"
 
 void missionHandler::dumpToDisk() const {
     spdlog::info("dumping {} to disk", m_missionName);
@@ -18,9 +19,23 @@ void missionHandler::dumpToDisk() const {
         missionName = "NO NAME";
     }
 
-    std::string filename = fmt::format("{}_{}.zip", m_missionDate, missionName);
+    std::string databasePath = c_config["database_path"];
+    if (databasePath != "" && databasePath[databasePath.size() - 1] != '/') {
+        databasePath += '/';
+    }
+    databasePath += "missions.db";
 
-    struct zip_t *zip = zip_open(filename.c_str(), ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
+    std::string replayPath = c_config["replay_path"];
+    if (replayPath != "" && replayPath[replayPath.size() - 1] != '/') {
+        replayPath += '/';
+    }
+
+    std::string filename = fmt::format("{}_{}.zip", m_missionDate, missionName);
+    std::string filepath = replayPath + filename;
+
+    spdlog::info("mission zip path: {}", filepath);
+
+    struct zip_t *zip = zip_open(filepath.c_str(), ZIP_DEFAULT_COMPRESSION_LEVEL, 'w');
 
     {
         zip_entry_open(zip, "meta.json");
@@ -53,6 +68,31 @@ void missionHandler::dumpToDisk() const {
     m_projectileHandler.serialise(zip);
 
     zip_close(zip);
+
+    spdlog::info("db path: {}", databasePath);
+    sqlite3 *db = nullptr;
+    int returnCode = sqlite3_open(databasePath.c_str(), &db);
+    if (returnCode != SQLITE_OK) {
+        spdlog::error("Cannot open database: {}", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return;
+    }
+
+    unsigned int playerCount = m_objectHandler.playerCount();
+
+    const auto sql = fmt::format("INSERT INTO missions VALUES ('{}', '{}', '{}', '{}', '{}')", m_missionName, m_worldName, playerCount, m_missionDateEpoch, filename);
+
+    char *zErrMessage = nullptr;
+    spdlog::info("Inserting into database with SQL: {}", sql);
+    returnCode = sqlite3_exec(db, sql.c_str(), [] (void *, int, char **, char **) -> int { return 0; }, nullptr, &zErrMessage);
+    if (returnCode != SQLITE_OK) {
+        spdlog::error("SQL: {} [{}]", sqlite3_errmsg(db), zErrMessage);
+        sqlite3_free(zErrMessage);
+        sqlite3_close(db);
+        return;
+    }
+
+    sqlite3_close(db);
 }
 
 void missionHandler::onStart(eventData &event) {
@@ -64,6 +104,9 @@ void missionHandler::onStart(eventData &event) {
     metaInfo.data[3]->convert(m_objectUpdateRate);
     metaInfo.data[4]->convert(m_projectileUpdateRate);
 
+    m_worldName.erase(std::remove(m_worldName.begin(), m_worldName.end(), '"'), m_worldName.end());
+    m_missionName.erase(std::remove(m_missionName.begin(), m_missionName.end(), '"'), m_missionName.end());
+
     m_projectileHandler.updateRate = m_projectileUpdateRate;
 
     time_t rawtime;
@@ -74,6 +117,7 @@ void missionHandler::onStart(eventData &event) {
     timeinfo = localtime(&rawtime);
 
     strftime(buffer, sizeof(buffer), "%d-%m-%y_%H-%M-%S", timeinfo);
+    m_missionDateEpoch = std::mktime(timeinfo);
     m_missionDate = buffer;
 
     m_eventHandlerHandle = m_server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&missionHandler::logEvent, this, std::placeholders::_1));
@@ -100,7 +144,8 @@ void missionHandler::logEvent(const std::vector<std::unique_ptr<potato::baseARMA
     }
 }
 
-missionHandler::missionHandler(dataServer &server, eventData &startEvent) :
+missionHandler::missionHandler(dataServer &server, eventData &startEvent, const nlohmann::json &config) :
+    c_config(config),
     m_server(server),
     m_eventHandler(server),
     m_objectHandler(server),

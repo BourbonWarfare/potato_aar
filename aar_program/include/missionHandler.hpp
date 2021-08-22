@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <nlohmann/json_fwd.hpp>
 #include "bw/armaTypes.hpp"
 
 #include "eventProcessor.hpp"
@@ -16,9 +17,12 @@
 class dataServer;
 class missionHandler {
     private:
+        const nlohmann::json &c_config;
+
         dataServer &m_server;
         int m_eventHandlerHandle = -1;
 
+        std::uint64_t m_missionDateEpoch = 0;
         std::string m_missionDate = "";
         double m_missionEnd = 0.0;
 
@@ -46,7 +50,7 @@ class missionHandler {
         void logEvent(const std::vector<std::unique_ptr<potato::baseARMAVariable>> &variables);
 
     public:
-        missionHandler(dataServer &server, eventData &startEvent);
+        missionHandler(dataServer &server, eventData &startEvent, const nlohmann::json &config);
         ~missionHandler();
 
         void drawInfo() const;

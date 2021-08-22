@@ -7,7 +7,7 @@
 #include <deque>
 #include <memory>
 #include <string>
-#include <set>
+#include <unordered_set>
 #include "bw/armaTypes.hpp"
 #include "armaEvents.hpp"
 #include <string_view>
@@ -39,13 +39,14 @@ class objectTracker {
             struct occupantState {
                 double time = 0.0;
 
-                std::set<std::string> m_occupants;
+                std::unordered_set<std::string> m_occupants;
                 std::string m_occupantOf = "";
             };
 
             std::string m_classname = "";
             std::string m_uid = "";
             std::string m_realName = "";
+            std::string m_type = "";
 
             std::deque<state> m_states;
             std::deque<occupantState> m_occupationStates;
@@ -56,6 +57,8 @@ class objectTracker {
         dataServer &m_server;
         int m_eventID = 0;
         int m_updateID = 0;
+
+        std::unordered_set<std::string> m_players;
 
         void created(eventData &event);
         void destroyed(eventData &event);
@@ -73,4 +76,6 @@ class objectTracker {
         void drawInfo() const;
 
         void serialise(struct zip_t *zip) const;
+
+        unsigned int playerCount() const;
 };

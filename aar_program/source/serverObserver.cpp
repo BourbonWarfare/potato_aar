@@ -3,10 +3,12 @@
 #include "armaEvents.hpp"
 #include "imgui.h"
 #include "spdlog/spdlog.h"
+#include "nlohmann/json.hpp"
+#include <fstream>
 
 void serverObserver::startMission(eventData &startEvent) {
     m_activeMissionsMutex.lock();
-    m_activeMissions.emplace_back(std::make_unique<missionHandler>(m_server, startEvent));
+    m_activeMissions.emplace_back(std::make_unique<missionHandler>(m_server, startEvent, c_config));
     m_activeMissionsMutex.unlock();
 
     potato::armaArray &metaInfo = *static_cast<potato::armaArray*>(startEvent.eventInformation[0].get());
@@ -45,6 +47,25 @@ serverObserver::serverObserver(dataServer &server) :
 {
     m_server.subscribe(potato::packetTypes::GAME_EVENT, std::bind(&serverObserver::logEvent, this, std::placeholders::_1));
     m_server.subscribe(potato::packetTypes::HEARTBEAT, std::bind(&serverObserver::heartbeat, this, std::placeholders::_1));
+
+    nlohmann::json config;
+    std::ifstream in("aar_config.json");
+    if (in) {
+        in >> config;
+    } else {
+        std::ofstream out("aar_config.json");
+        config["replay_path"] = "";
+        config["database_path"] = "";
+        config["heartbeat_timeout_count"] = 5;
+        out << config;
+        out.close();
+    }
+    in.close();
+
+    const_cast<nlohmann::json&>(c_config) = config;
+    if (config["heartbeat_timeout_count"].is_number_integer()) {
+        const_cast<unsigned int&>(c_heartbeatTimeouts) = config["heartbeat_timeout_count"].get<unsigned int>();
+    }
 }
 
 void serverObserver::update() {
@@ -87,6 +108,9 @@ void serverObserver::drawInfo(float appWidth, float appHeight) {
                 ImGui::SameLine();
                 ImGui::Text(fmt::format("Timeout {}/{}", std::floor(m_heartbeatClock.getTime().asSeconds() / m_heartbeatRate.asSeconds()), c_heartbeatTimeouts).c_str());
             }
+
+            ImGui::Text("AAR Config");
+            ImGui::Text(c_config.dump(2).c_str());
 
             ImGui::EndTabItem();
         }

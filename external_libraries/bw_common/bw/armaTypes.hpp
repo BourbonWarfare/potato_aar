@@ -50,19 +50,19 @@ namespace potato {
     // Return the ARMA variableType from C++ type
     template<typename T>
     constexpr variableType getVariableType() {
-        if constexpr (std::is_arithmetic<T>::value) {
+        if constexpr (std::is_arithmetic<std::remove_reference<T>::type>::value) {
             return variableType::NUMBER;
         }
 
-        if constexpr (std::is_same<T, std::string>::value) {
+        if constexpr (std::is_same<std::remove_reference<T>::type, std::string>::value) {
             return variableType::STRING;
         }
 
-        if constexpr (std::is_same<T, bool>::value) {
+        if constexpr (std::is_same<std::remove_reference<T>::type, bool>::value) {
             return variableType::BOOLEAN;
         }
 
-        if constexpr (std::is_same<T, std::vector<std::unique_ptr<baseARMAVariable>>>::value) {
+        if constexpr (std::is_same<std::remove_reference<T>::type, std::vector<std::unique_ptr<baseARMAVariable>>>::value) {
             return variableType::ARRAY;
         }
 
@@ -120,15 +120,15 @@ namespace potato {
             }
 
             if constexpr (getVariableType<T>() == potato::variableType::BOOLEAN) {
-                output = static_cast<T>(*static_cast<bool *>(dataPtr));
+                output = static_cast<T>(*static_cast<bool*>(dataPtr));
             }
 
             if constexpr (getVariableType<T>() == potato::variableType::NUMBER) {
-                output = static_cast<T>(*static_cast<double *>(dataPtr));
+                output = static_cast<T>(*static_cast<double*>(dataPtr));
             }
 
             if constexpr (getVariableType<T>() == potato::variableType::STRING) {
-                output = static_cast<T>(*static_cast<std::string *>(dataPtr));
+                output = static_cast<T>(*static_cast<std::string*>(dataPtr));
             }
 
             return true;

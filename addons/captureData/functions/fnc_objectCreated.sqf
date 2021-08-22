@@ -17,6 +17,31 @@ if (_object isKindOf "CAManBase") then {
     _name = name _object;
 };
 
+private _type = "NONE";
+if (_object isKindOf "CAManBase") then {
+    _type = "MAN";
+};
+
+if (_object isKindOf "Tank") then {
+    _type = "TANK";
+};
+
+if (_object isKindOf "Car") then {
+    _type = "CAR";
+};
+
+if (_object isKindOf "Wheeled_APC_F") then {
+    _type = "IFV";
+};
+
+if (_object isKindOf "Helicopter") then {
+    _type = "HELICOPTER";
+};
+
+if (_object isKindOf "Plane") then {
+    _type = "PLANE";
+};
+
 private _eventData = [
     EVENT_OBJECT_CREATED,
     CBA_missionTime,
@@ -24,7 +49,9 @@ private _eventData = [
         [_object] call FUNC(getObjectUID),
         typeOf _object,
         getPosASLVisual _object,
-        _name
+        _name,
+        isPlayer _object,
+        _type
     ]
 ];
 

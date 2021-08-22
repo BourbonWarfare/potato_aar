@@ -19,6 +19,14 @@ void objectTracker::created(eventData &event) {
 
     event.eventInformation[3]->convert(newObject.m_realName);
 
+    if (newObject.m_classname == "\"C_man_polo_1_F\"") {
+        int i = 0;
+    }
+
+    bool isPlayer = static_cast<potato::armaBool *>(event.eventInformation[4].get())->data;
+
+    event.eventInformation[5]->convert(newObject.m_type);
+
     objectInfo::state startState;
 
     startState.time = event.eventTime;
@@ -33,6 +41,9 @@ void objectTracker::created(eventData &event) {
     newObject.m_occupationStates.push_back(startOccupation);
 
     m_objects.insert({ newObject.m_uid, std::move(newObject) });
+    if (isPlayer) {
+        m_players.insert(newObject.m_uid);
+    }
 }
 
 void objectTracker::destroyed(eventData &event) {
@@ -230,11 +241,37 @@ void objectTracker::serialise(struct zip_t *zip) const {
         workingObject["uid"] = object.first;
         workingObject["classname"] = object.second.m_classname;
         workingObject["realName"] = object.second.m_realName;
+        workingObject["type"] = object.second.m_type;
+
+        bool firstState = true;
+        float lastX = 0.f;
+        float lastY = 0.f;
+        float lastZ = 0.f;
 
         std::vector<nlohmann::json> updateStates;
         for (auto &state : object.second.m_states) {
+            bool relevant = false;
+
             nlohmann::json stateJSON;
             stateJSON["time"] = state.time;
+            if (firstState) {
+                relevant = true;
+                firstState = false;
+            } else {
+                float dx = lastX - state.positionX;
+                float dy = lastY - state.positionY;
+                float dz = lastZ - state.positionZ;
+
+                float distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+                relevant = distance > 1.f;
+            }
+
+            if (!relevant) { continue; }
+
+            lastX = state.positionX;
+            lastY = state.positionY;
+            lastZ = state.positionZ;
+
             stateJSON["position"] = { state.positionX, state.positionY, state.positionZ };
             stateJSON["azimuth"] = state.azimuth;
             stateJSON["pitch"] = state.pitch;
@@ -268,3 +305,8 @@ void objectTracker::serialise(struct zip_t *zip) const {
         zip_entry_close(zip);
     }
 }
+
+unsigned int objectTracker::playerCount() const {
+    return m_players.size();
+}
+

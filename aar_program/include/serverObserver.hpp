@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include "bw/armaTypes.hpp"
 #include "missionHandler.hpp"
 #include "clock.hpp"
@@ -12,7 +13,9 @@
 class dataServer;
 class serverObserver {
     private:
-        static constexpr int c_heartbeatTimeouts = 5;
+        const nlohmann::json c_config;
+
+        const unsigned int c_heartbeatTimeouts = 5;
         fe::time m_heartbeatRate;
         fe::clock m_heartbeatClock;
         bool m_inMission = false;
