@@ -43,22 +43,28 @@ function createRect(rect, colourMap, vertices, colours, indices, defaultColour) 
     const rgb = getColourFromFill(colourMap, rect.getAttribute('fill'), defaultColour);
 
     const indexOffset = vertices.length / 2;
-    vertices.push(x + 0, y + 0);
-    vertices.push(x + w, y + 0);
-    vertices.push(x + w, y + h);
-    vertices.push(x + 0, y + h);
+    vertices.push(
+        x + 0, y + 0,
+        x + w, y + 0,
+        x + w, y + h,
+        x + 0, y + h
+    );
 
-    indices.push(indexOffset + 0);
-    indices.push(indexOffset + 1);
-    indices.push(indexOffset + 2);
-    indices.push(indexOffset + 2);
-    indices.push(indexOffset + 3);
-    indices.push(indexOffset + 0);
+    indices.push(
+        indexOffset + 0,
+        indexOffset + 1,
+        indexOffset + 2,
+        indexOffset + 2,
+        indexOffset + 3,
+        indexOffset + 0
+    );
 
-    colours.push(rgb[0], rgb[1], rgb[2]);
-    colours.push(rgb[0], rgb[1], rgb[2]);
-    colours.push(rgb[0], rgb[1], rgb[2]);
-    colours.push(rgb[0], rgb[1], rgb[2]);
+    colours.push(
+        rgb[0], rgb[1], rgb[2],
+        rgb[0], rgb[1], rgb[2],
+        rgb[0], rgb[1], rgb[2],
+        rgb[0], rgb[1], rgb[2]
+    );
 }
 
 function createPolygon(polygon, colourMap, vertices, colours, indices, defaultColour) {
@@ -66,17 +72,14 @@ function createPolygon(polygon, colourMap, vertices, colours, indices, defaultCo
     const xyPairs = svgPoints.split(/[, ]/).map(x => parseFloat(x));
 
     const rgb = getColourFromFill(colourMap, polygon.getAttribute('fill'), defaultColour);
-    let points = [];
     const indexOffset = vertices.length / 2;
+    
     for (let i = 0; i < xyPairs.length; i += 2) {
-        const x = xyPairs[i + 0];
-        const y = xyPairs[i + 1];
-        points.push(x, y);
-        vertices.push(x, y);
+        vertices.push(xyPairs[i + 0], xyPairs[i + 1]);
         colours.push(rgb[0], rgb[1], rgb[2]);
     }
 
-    earcut(points, null, 2).forEach(index => {
+    earcut(xyPairs, null, 2).forEach(index => {
         indices.push(indexOffset + index);
     });
 }
@@ -97,22 +100,28 @@ function createLineShape(x0, y0, x1, y1, vertices, colours, indices, rgb, width)
     var normalDirectionY = -directionX;
     
     const indexOffset = vertices.length / 2;
-    vertices.push(x0 + (-normalDirectionX - directionX) * width, y0 + (-normalDirectionY - directionY) * width);
-    vertices.push(x1 + (directionX - normalDirectionX) * width, y1 + (directionY - normalDirectionY) * width);
-    vertices.push(x1 + (directionX + normalDirectionX) * width, y1 + (directionY + normalDirectionY) * width);
-    vertices.push(x0 + (normalDirectionX - directionX) * width, y0 + (normalDirectionY - directionY) * width);
+    vertices.push(
+        x0 + (-normalDirectionX - directionX) * width, y0 + (-normalDirectionY - directionY) * width,
+        x1 + (directionX - normalDirectionX) * width, y1 + (directionY - normalDirectionY) * width,
+        x1 + (directionX + normalDirectionX) * width, y1 + (directionY + normalDirectionY) * width,
+        x0 + (normalDirectionX - directionX) * width, y0 + (normalDirectionY - directionY) * width
+    );
 
-    indices.push(indexOffset + 0);
-    indices.push(indexOffset + 1);
-    indices.push(indexOffset + 2);
-    indices.push(indexOffset + 2);
-    indices.push(indexOffset + 3);
-    indices.push(indexOffset + 0);
+    indices.push(
+        indexOffset + 0,
+        indexOffset + 1,
+        indexOffset + 2,
+        indexOffset + 2,
+        indexOffset + 3,
+        indexOffset + 0
+    );
 
-    colours.push(rgb[0], rgb[1], rgb[2]);
-    colours.push(rgb[0], rgb[1], rgb[2]);
-    colours.push(rgb[0], rgb[1], rgb[2]);
-    colours.push(rgb[0], rgb[1], rgb[2]);
+    colours.push(
+        rgb[0], rgb[1], rgb[2],
+        rgb[0], rgb[1], rgb[2],
+        rgb[0], rgb[1], rgb[2],
+        rgb[0], rgb[1], rgb[2]
+    );
 }
 
 function createLine(line, colourMap, vertices, colours, indices, defaultColour, width) {
