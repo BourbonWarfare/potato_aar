@@ -223,6 +223,15 @@ function toggleMissionTray(force = null) {
     }
 }
 
+function isJsonString(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
 function main() {
     const canvas = document.querySelector("#glCanvas");
     const gl = canvas.getContext("webgl", { alpha: false });
@@ -454,8 +463,13 @@ function main() {
 
                         missionLength = packet.data.endTime;
                         document.getElementById('totalTime').innerText = formatTime(missionLength);
-                        
-                        const map = JSON.parse(packet.data.map);
+                       
+                        console.log(packet.data.map);
+                        var map = packet.data.map;
+                        if (isJsonString(packet.data.map)) {
+                            map = JSON.parse(packet.data.map);
+                            console.log("is json");
+                        }
                         console.log(map);
                         worldSize = packet.data.mapSize;
                         const oReq = new XMLHttpRequest();
