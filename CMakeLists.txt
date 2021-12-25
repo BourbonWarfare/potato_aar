@@ -5,4 +5,5 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 add_subdirectory(extensions)
 add_subdirectory(aar_program)
+add_subdirectory(aar_map_converter)
 
