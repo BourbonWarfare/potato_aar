@@ -474,17 +474,59 @@ function main() {
                         worldSize = packet.data.mapSize;
                         const oReq = new XMLHttpRequest();
                         oReq.addEventListener('load', function() {
-                            const parser = new DOMParser();
+                            let blobResponse = oReq.response;
+
+                            let bufferPromise = blobResponse.arrayBuffer();
+                            blobResponse.arrayBuffer().then(buffer => {
+                                let vertices = [];
+                                let indices = [];
+                                let colours = [];
+
+                                // process
+                                let view = new DataView(buffer);
+                                let sizeOfCoord = view.getUint8(0);
+                                let coordCount = view.getUint32(1, true);
+
+                                let offset = 0
+                                let coordView = new Float32Array(buffer.slice(offset + 5, offset + 5 + sizeOfCoord * coordCount));
+                                offset += 5 + sizeOfCoord * coordCount;
+
+                                for (let i = 0; i < coordCount; i += 2) {
+                                    vertices.push(coordView[i + 0], worldSize - coordView[i + 1]);
+                                }
+
+                                let sizeOfIndex = view.getUint8(offset);
+                                let indexCount = view.getUint32(offset + 1, true);
+                                
+                                let indexView = new Uint32Array(buffer.slice(offset + 5, offset + 5 + sizeOfIndex * indexCount));
+                                offset += 5 + sizeOfIndex * indexCount;
+                                for (let i = 0; i < indexCount; i++) {
+                                    indices.push(indexView[i]);
+                                }
+
+                                let sizeOfRGB = view.getUint8(offset);
+                                let rgbCount = view.getUint32(offset + 1, true);
+                                
+                                let rgbView = new Uint8Array(buffer.slice(offset + 5, offset + 5 + sizeOfRGB * rgbCount));
+                                offset += 5 + sizeOfRGB * rgbCount;
+                                for (let i = 0; i < rgbCount; i += 3) {
+                                    colours.push(rgbView[i + 0] / 255, rgbView[i + 1] / 255, rgbView[i + 2] / 255);
+                                }
+                                console.log(colours.length, sizeOfRGB, rgbCount);
+                                testObject = new RenderObject(gl, vertices, indices, colours);
+                            });
+                            
+                            /*const parser = new DOMParser();
                             const doc = parser.parseFromString(this.responseText, 'image/svg+xml');
 
                             const svg = parseSVGDoc(doc.getElementsByTagName('svg')[0]);
 
                             for (let i = 1; i < svg.vertices.length; i += 2) {
                                 svg.vertices[i] = worldSize - svg.vertices[i];
-                            }
-                            testObject = new RenderObject(gl, svg.vertices, svg.indices, svg.colours);
+                            }*/
                         });
-                        oReq.open("GET", `/maps/${map}.svg`);
+                        oReq.open("GET", `/maps/compressed/${map}.triangulated`);
+                        oReq.responseType = "blob";
                         oReq.send();
                     }
                     break;
