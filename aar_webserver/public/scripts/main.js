@@ -740,16 +740,17 @@ function main() {
             0.05        50
         */
 
-        let markerScale = Math.max(1, lerp(1, 100, 1 - (camera.zoom - camera.minZoom) / (minZoomForSwap - camera.minZoom)));
+        let markerScale = Math.max(3, lerp(3, 100, 1 - (camera.zoom - camera.minZoom) / (minZoomForSwap - camera.minZoom)));
 
         gameObjects.forEach(gameObject => {
             if (gameObject.active) {
                 let localScale = markerScale;
                 if (gameObject.alive) {
-                    let smallTexture = 'none';
+                    let smallTexture = 'infantry';
                     let bigTexture = 'infantry';
                     switch (gameObject.type) {
                         case 'MAN':
+                            smallTexture = 'infantry';
                             bigTexture = 'infantry';
                             break;
                         case 'HELICOPTER':
@@ -781,6 +782,8 @@ function main() {
                     } else if (camera.zoom <= minZoomForSwap && gameObject.renderObject.texture != textures.get(bigTexture)) {
                         gameObject.renderObject.setTexture(textures.get(bigTexture));
                     }
+                } else {
+                    localScale = Math.min(10, localScale);
                 }
 
                 gameObject.renderObject.scale = [localScale, localScale];
