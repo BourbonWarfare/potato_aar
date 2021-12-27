@@ -389,13 +389,13 @@ function main() {
         }),
         'Object Killed': new Event((uid, packetArguments) => {
             if (gameObjects.has(uid)) {
-                gameObjects.get(uid).renderObject.setColour([1, 1, 1]);
+                //gameObjects.get(uid).renderObject.setColour([1, 1, 1]);
                 gameObjects.get(uid).renderObject.setTexture(textures.get('death_icon'));
                 gameObjects.get(uid).alive = false;
             }
         }, (uid, packetArguments) => {
             if (gameObjects.has(uid)) {
-                gameObjects.get(uid).renderObject.setColour(gameObjects.get(uid).sideColour);
+                //gameObjects.get(uid).renderObject.setColour(gameObjects.get(uid).sideColour);
                 gameObjects.get(uid).renderObject.setTexture(textures.get('none'));
                 gameObjects.get(uid).alive = true;
             }
