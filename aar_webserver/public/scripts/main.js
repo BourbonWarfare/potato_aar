@@ -2,7 +2,7 @@
 // entry point for web page. Initialised WebGL layer and gets ready to render
 import { Circle, Quad, Line } from './modules/shapes.js';
 import { parseSVGDoc } from './modules/svg.js';
-import { RenderObject, Texture, Camera, drawScene, initShaderProgram } from './modules/rendering.js';
+import { RenderObject, Texture, Camera, drawScene, initShaderProgram, lerp } from './modules/rendering.js';
 
 const textureVsSource = `
     attribute vec2 aVertexPosition;
@@ -114,6 +114,8 @@ function GameObject(gl, eventArguments, texture = null) {
 
     this.position = eventArguments[2];
     this.name = eventArguments[3];
+    this.type = 'unknown';
+    this.alive = true;
 
     this.futurePositions = [];
     this.currentState = 0;
@@ -307,6 +309,8 @@ function main() {
     var textures = new Map();
     textures.set('none', new Texture(gl, ''));
     textures.set('death_icon', new Texture(gl, '/icons/death_skull.png'));
+    textures.set('infantry', new Texture(gl, '/icons/infantry.png'));
+    textures.set('helicopter', new Texture(gl, '/icons/helicopter.png'));
 
     var testObject = null;
     var projectiles = new Map();
@@ -333,6 +337,8 @@ function main() {
     var latestUpdateTimeRecieved = 0;
 
     var currentTime = 0;
+
+    const minZoomForSwap = 1.7;
 
     document.getElementById('trayButton').onclick = toggleMissionTray;
     toggleMissionTray(true);
@@ -373,7 +379,7 @@ function main() {
             console.log(uid, classname, packetArguments);
             gameObjects.set(
                 uid,
-                new GameObject(gl, packetArguments, new Texture(gl, ''))
+                new GameObject(gl, packetArguments, textures.get('none'))
             );
         }, (uid, packetArguments) => {
             gameObjects.delete(uid);
@@ -382,11 +388,13 @@ function main() {
             if (gameObjects.has(uid)) {
                 gameObjects.get(uid).renderObject.setColour([1, 1, 1]);
                 gameObjects.get(uid).renderObject.setTexture(textures.get('death_icon'));
+                gameObjects.get(uid).alive = false;
             }
         }, (uid, packetArguments) => {
             if (gameObjects.has(uid)) {
                 gameObjects.get(uid).renderObject.setColour(gameObjects.get(uid).sideColour);
                 gameObjects.get(uid).renderObject.setTexture(textures.get('none'));
+                gameObjects.get(uid).alive = true;
             }
         }),
         'Fired': new Event((uid, packetArguments, currentTime) => {
@@ -429,6 +437,7 @@ function main() {
             paused = !paused;
         }
 
+        // request mission
         {
             const missionTable = document.getElementById('missionTable');
             const elements = missionTable.getElementsByClassName('missionEntry');
@@ -473,6 +482,7 @@ function main() {
                         console.log(map);
                         worldSize = packet.data.mapSize;
                         const oReq = new XMLHttpRequest();
+                        // load map
                         oReq.addEventListener('load', function() {
                             let blobResponse = oReq.response;
 
@@ -581,6 +591,7 @@ function main() {
                         const dy = lastState.position[1] - packet.data.state.position[1];
 
                         const object = gameObjects.get(packet.data.object);
+                        // set the camera on the first loaded game object so we are somewhere near the AO
                         if (!setCameraPosition && object != null && object.className != 'HeadlessClient_F') {
                             setCameraPosition = true;
                             camera.position = [
@@ -589,6 +600,7 @@ function main() {
                             ];
                         }
 
+                        // discard packets where the net difference hasnt changed within 1 meter.
                         const distance = Math.sqrt(dx * dx + dy * dy);
                         if (distance <= 1) {
                             break;
@@ -608,6 +620,7 @@ function main() {
         var width = gl.canvas.clientWidth;
         var height = gl.canvas.clientHeight;
 
+        // resized canvas
         if (gl.canvas.width != width || gl.canvas.has != height) {
             gl.canvas.width = width;
             gl.canvas.height = height;
@@ -675,6 +688,7 @@ function main() {
             }
         });
 
+        // play messages forward
         if (!paused) {
             while (currentEvent < eventQueue.length && currentTime >= eventQueue[currentEvent].time) {
                 const frontEvent = eventQueue[currentEvent];
@@ -704,6 +718,7 @@ function main() {
             });
         }
 
+        // update played slider
         if (missionLength != 0) {
             let slider = document.getElementById('playbackTime');
             const validAmount = slider.clientWidth * latestUpdateTimeRecieved / missionLength;
@@ -716,8 +731,39 @@ function main() {
             projectilesToRender.push(projectile.draw());
         });
 
+        /*
+            zoom    |   scale
+            3           1
+            0.05        50
+        */
+
+        let markerScale = Math.max(1, lerp(1, 100, 1 - (camera.zoom - camera.minZoom) / (minZoomForSwap - camera.minZoom)));
+
         gameObjects.forEach(gameObject => {
             if (gameObject.active) {
+                if (gameObject.alive) {
+                    let smallTexture = 'none';
+                    let bigTexture = 'infantry';
+                    switch (gameObject.type) {
+                        case 'infantry':
+                            bigTexture = 'infantry';
+                            break;
+                        case 'helicopter':
+                            bigTexture = 'helicopter';
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (camera.zoom > minZoomForSwap && gameObject.renderObject.texture != textures.get(smallTexture)) {
+                        gameObject.renderObject.setTexture(textures.get(smallTexture));
+                    } else if (camera.zoom <= minZoomForSwap && gameObject.renderObject.texture != textures.get(bigTexture)) {
+                        gameObject.renderObject.setTexture(textures.get(bigTexture));
+                    }
+                }
+
+                gameObject.renderObject.scale = [markerScale, markerScale];
+                
                 objectsToRender.push(gameObject.draw());
             }
         });

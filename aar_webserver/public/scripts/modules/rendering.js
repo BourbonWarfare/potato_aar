@@ -61,7 +61,7 @@ function drawScene(gl, camera, programInfo, renderObjects) {
             mat4.create(),
             quat.fromEuler(quat.create(), 0, 0, renderObject.rotation),
             [renderObject.position[0], renderObject.position[1], 0],
-            [1, 1, 1],
+            [renderObject.scale[0], renderObject.scale[1], 1],
             [renderObject.origin[0], renderObject.origin[1], 0]
         );
         if (!renderObject.useModelMatrix) {
@@ -206,6 +206,7 @@ function Texture(gl, url) {
 function RenderObject(gl, shape, indices = [], colours = []) {
     this.position = [0, 0];
     this.rotation = 0;
+    this.scale = [1, 1];
     this.origin = [0, 0];
     this.vertexCount = shape.length / 2;
     this.indexCount = indices.length;
@@ -326,10 +327,15 @@ function Camera(size, workingElement) {
     });
 }
 
+function lerp(start, end, amount) {
+    return start * (1 - amount) + end * amount;
+}
+
 export {
     RenderObject,
     Texture,
     Camera,
     drawScene,
-    initShaderProgram
+    initShaderProgram,
+    lerp
 }
