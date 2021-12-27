@@ -114,7 +114,7 @@ function GameObject(gl, eventArguments, texture = null) {
 
     this.position = eventArguments[2];
     this.name = eventArguments[3];
-    this.type = 'unknown';
+    this.type = eventArguments[5];
     this.alive = true;
 
     this.futurePositions = [];
@@ -311,6 +311,9 @@ function main() {
     textures.set('death_icon', new Texture(gl, '/icons/death_skull.png'));
     textures.set('infantry', new Texture(gl, '/icons/infantry.png'));
     textures.set('helicopter', new Texture(gl, '/icons/helicopter.png'));
+    textures.set('car', new Texture(gl, '/icons/support.png'));
+    textures.set('tank', new Texture(gl, '/icons/armor.png'));
+    textures.set('ifv', new Texture(gl, '/icons/mechanized_infantry.png'));
 
     var testObject = null;
     var projectiles = new Map();
@@ -741,15 +744,33 @@ function main() {
 
         gameObjects.forEach(gameObject => {
             if (gameObject.active) {
+                let localScale = markerScale;
                 if (gameObject.alive) {
                     let smallTexture = 'none';
                     let bigTexture = 'infantry';
                     switch (gameObject.type) {
-                        case 'infantry':
+                        case 'MAN':
                             bigTexture = 'infantry';
                             break;
-                        case 'helicopter':
+                        case 'HELICOPTER':
+                            smallTexture = 'helicopter';
                             bigTexture = 'helicopter';
+                            localScale = Math.max(15, localScale);
+                            break;
+                        case 'CAR':
+                            smallTexture = 'car';
+                            bigTexture = 'car';
+                            localScale = Math.max(10, localScale);
+                            break;
+                        case 'TANK':
+                            smallTexture = 'tank';
+                            bigTexture = 'tank';
+                            localScale = Math.max(10, localScale);
+                            break;
+                        case 'IFV':
+                            smallTexture = 'ifv';
+                            bigTexture = 'ifv';
+                            localScale = Math.max(10, localScale);
                             break;
                         default:
                             break;
@@ -762,7 +783,7 @@ function main() {
                     }
                 }
 
-                gameObject.renderObject.scale = [markerScale, markerScale];
+                gameObject.renderObject.scale = [localScale, localScale];
                 
                 objectsToRender.push(gameObject.draw());
             }
